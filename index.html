@@ -17,16 +17,16 @@
         .output-text { color: #2d3748; white-space: pre-wrap; }
 
         /* --- Font Normalization --- */
-        .font-vt323 { font-family: 'VT323', monospace; font-size: 20px; letter-spacing: 2px; line-height: 24px; }
-        .font-special-elite { font-family: 'Special Elite', cursive; font-size: 16px; letter-spacing: 1.5px; line-height: 26px; }
-        .font-cutive-mono { font-family: 'Cutive Mono', monospace; font-size: 17px; letter-spacing: 1px; line-height: 25px; }
-        .font-bogart { font-family: 'Bogart', serif; font-size: 19px; letter-spacing: 0.5px; line-height: 26px; }
-        .font-press-start-2p { font-family: 'Press Start 2P', cursive; font-size: 12px; line-height: 24px; }
-        .font-ibm-plex-mono { font-family: 'IBM Plex Mono', monospace; font-size: 16px; line-height: 26px; }
-        .font-anonymous-pro { font-family: 'Anonymous Pro', monospace; font-size: 18px; line-height: 26px; }
-        .font-cousine { font-family: 'Cousine', monospace; font-size: 17px; line-height: 26px; }
-        .font-libre-baskerville { font-family: 'Libre Baskerville', serif; font-size: 17px; line-height: 28px; }
-        .font-oranienbaum { font-family: 'Oranienbaum', serif; font-size: 20px; line-height: 28px; }
+        .font-vt323 { font-family: 'VT323', monospace; font-size: 1.25em; letter-spacing: 2px; line-height: 1.5em; }
+        .font-special-elite { font-family: 'Special Elite', cursive; font-size: 1em; letter-spacing: 1.5px; line-height: 1.6em; }
+        .font-cutive-mono { font-family: 'Cutive Mono', monospace; font-size: 1.05em; letter-spacing: 1px; line-height: 1.55em; }
+        .font-bogart { font-family: 'Bogart', serif; font-size: 1.2em; letter-spacing: 0.5px; line-height: 1.6em; }
+        .font-press-start-2p { font-family: 'Press Start 2P', cursive; font-size: 0.75em; line-height: 1.5em; }
+        .font-ibm-plex-mono { font-family: 'IBM Plex Mono', monospace; font-size: 1em; line-height: 1.6em; }
+        .font-anonymous-pro { font-family: 'Anonymous Pro', monospace; font-size: 1.1em; line-height: 1.6em; }
+        .font-cousine { font-family: 'Cousine', monospace; font-size: 1.05em; line-height: 1.6em; }
+        .font-libre-baskerville { font-family: 'Libre Baskerville', serif; font-size: 1.05em; line-height: 1.7em; }
+        .font-oranienbaum { font-family: 'Oranienbaum', serif; font-size: 1.25em; line-height: 1.7em; }
 
         /* Style for individual characters to add irregularity */
         .styled-char { display: inline-block; margin: 0 -2px; padding: 0 2px; }
@@ -54,8 +54,8 @@
         <!-- Controls Section -->
         <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-4">
             <!-- Font and Irregularity Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                <div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                 <div>
                     <label for="fontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
                     <select id="fontSelector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                         <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
@@ -69,6 +69,10 @@
                         <option value="font-vt323">Dot-Matrix (Mono)</option>
                         <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
                     </select>
+                </div>
+                <div>
+                    <label for="textSizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
+                    <input id="textSizeSlider" type="range" min="10" max="28" value="16" class="mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                 </div>
                 <div>
                     <label for="irregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity Level</label>
@@ -122,6 +126,7 @@
             const exportPdfButton = document.getElementById('exportPdfButton');
             const fontSelector = document.getElementById('fontSelector');
             const irregularitySlider = document.getElementById('irregularitySlider');
+            const textSizeSlider = document.getElementById('textSizeSlider');
             const outputDiv = document.getElementById('output');
             const outputContainer = document.getElementById('outputContainer');
 
@@ -194,24 +199,28 @@
             setupImageControls(signatureContainer, signaturePreview, signatureSizeSlider, signatureXSlider, signatureYSlider);
 
             // --- Text Generation ---
-            function createStyledChar(char) {
-                const irregularityFactor = irregularitySlider.value / 10.0; // Scale of 0.0 to 1.0
+            function createStyledChar(char, baseStyle) {
+                const irregularityFactor = irregularitySlider.value / 10.0;
                 const span = document.createElement('span');
                 span.className = 'styled-char';
                 span.innerHTML = (char === ' ') ? '&nbsp;' : char;
                 
-                // Apply randomness based on the slider value
                 const xOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
                 const yOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
                 const rotation = (Math.random() - 0.5) * 2.0 * irregularityFactor;
-                const opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
+                let opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
+
+                if (baseStyle.isBold) {
+                    opacity = Math.max(0.2, opacity - 0.1); // Bolder text is darker
+                    span.style.textShadow = `${0.5 * irregularityFactor}px 0 0 currentColor`;
+                }
+                if (baseStyle.isItalic) {
+                    span.style.fontStyle = 'italic';
+                }
 
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
                 span.style.opacity = opacity;
 
-                if (Math.random() < (0.5 * irregularityFactor)) { 
-                    span.style.textShadow = '0.5px 0.5px 0.5px rgba(45, 55, 72, 0.1)';
-                }
                 return span;
             }
 
@@ -219,10 +228,33 @@
                 let textToPrint = inputText.value.replace(/\u00A0/g, ' ');
                 outputDiv.innerHTML = '';
                 outputDiv.className = `min-h-[200px] w-full output-text ${fontSelector.value}`;
+                outputDiv.style.fontSize = `${textSizeSlider.value}px`;
+
+                // Regex to find normal text, bold, or italics
+                const regex = /(\*.*?\*)|(\/.*?\/)|([^*\/]+)/g;
+
                 const lines = textToPrint.split('\n');
                 lines.forEach(line => {
                     const lineDiv = document.createElement('div');
-                    for (const char of line) { lineDiv.appendChild(createStyledChar(char)); }
+                    const fragments = line.match(regex) || [];
+
+                    fragments.forEach(fragment => {
+                        const style = { isBold: false, isItalic: false };
+                        let cleanFragment = fragment;
+
+                        if (fragment.startsWith('*') && fragment.endsWith('*')) {
+                            style.isBold = true;
+                            cleanFragment = fragment.slice(1, -1);
+                        } else if (fragment.startsWith('/') && fragment.endsWith('/')) {
+                            style.isItalic = true;
+                            cleanFragment = fragment.slice(1, -1);
+                        }
+                        
+                        for (const char of cleanFragment) {
+                            lineDiv.appendChild(createStyledChar(char, style));
+                        }
+                    });
+
                     if (line.trim() === '') { lineDiv.innerHTML = '&nbsp;'; }
                     outputDiv.appendChild(lineDiv);
                 });
@@ -233,6 +265,7 @@
             exportPdfButton.addEventListener('click', exportToPDF);
             fontSelector.addEventListener('change', instantPrint);
             irregularitySlider.addEventListener('input', instantPrint);
+            textSizeSlider.addEventListener('input', instantPrint);
             inputText.addEventListener('input', instantPrint);
 
             // --- Initial State ---
@@ -243,13 +276,13 @@
       (913) 555-0184
 
 --------------------------------------------------
-CUSTOMER INVOICE
+*CUSTOMER INVOICE*
 --------------------------------------------------
 Invoice #: 85-0012                  Date: 10/26/1985
 
 BILLED TO:
 Dr. Evelyn Reed
-FutureTech Labs
+/FutureTech Labs/
 1 Innovation Plaza
 
 --------------------------------------------------
@@ -264,11 +297,11 @@ QTY | DESCRIPTION                         | TOTAL
                            SUBTOTAL:      | $195.50
                       SALES TAX (5.5%):    |  $10.75
                            ========================
-                           AMOUNT DUE:      | $206.25
+                           *AMOUNT DUE:* | *$206.25*
 --------------------------------------------------
 PAYMENT: Cash on delivery. 30-day warranty on all
-         parts and labor. Thank you for your
-         business!
+         parts and labor. /Thank you for your
+         business!/
 
          -- Vector Graphics Staff`;
             
