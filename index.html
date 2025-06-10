@@ -8,14 +8,12 @@
     <!-- Historical Fonts from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Bogart&family=Cousine&family=Cutive+Mono&family=IBM+Plex+Mono&family=Libre+Baskerville&family=Oranienbaum&family=Press+Start+2P&family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Bogart&family=Cousine&family=Cutive+Mono&family=IBM+Plex+Mono&family=Libre+Baskerville&family=Oranienbaum&family=Press+Start+2P&family=Special+Elite&family=VT323&family=Tinos&family=UnifrakturMaguntia&family=Vollkorn&display=swap" rel="stylesheet">
     <!-- PDF Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .output-text-block { position: absolute; cursor: move; padding: 5px; border: 1px dashed transparent; transition: border-color 0.2s; }
-        .output-text-block:hover, .output-text-block.selected { border-color: #93c5fd; }
-        .output-text { color: #2d3748; white-space: pre-wrap; outline: none; }
+        .output-text { color: #2d3748; white-space: pre-wrap; outline: none; height: 100%; overflow: hidden;}
         
         .font-vt323 { font-family: 'VT323', monospace; }
         .font-special-elite { font-family: 'Special Elite', cursive; }
@@ -27,20 +25,24 @@
         .font-cousine { font-family: 'Cousine', monospace; }
         .font-libre-baskerville { font-family: 'Libre Baskerville', serif; }
         .font-oranienbaum { font-family: 'Oranienbaum', serif; }
+        .font-tinos { font-family: 'Tinos', serif; }
+        .font-unifrakturmaguntia { font-family: 'UnifrakturMaguntia', cursive; }
+        .font-vollkorn { font-family: 'Vollkorn', serif; }
 
         .styled-char { display: inline-block; }
         
         #outputContainer { background-size: 100% 100%; background-position: center; background-repeat: no-repeat; }
         
-        .draggable-image-wrapper { position: absolute; cursor: move; border: 2px dashed transparent; transition: border-color 0.2s; }
-        .draggable-image-wrapper:hover, .draggable-image-wrapper.selected { border-color: #3b82f6; }
-        .draggable-image-wrapper.selected .resize-handle, .draggable-image-wrapper.selected .rotate-handle,
-        .output-text-block.selected .resize-handle, .output-text-block.selected .rotate-handle { display: block; }
-        .draggable-image-wrapper img { width: 100%; height: 100%; pointer-events: none; }
+        .draggable-wrapper { position: absolute; cursor: move; border: 2px dashed transparent; transition: border-color 0.2s; }
+        .draggable-wrapper:hover, .draggable-wrapper.selected { border-color: #3b82f6; }
+        .draggable-wrapper.selected .resize-handle, .draggable-wrapper.selected .rotate-handle { display: block; }
+        .draggable-wrapper img { width: 100%; height: 100%; pointer-events: none; user-select: none; }
+        
         .resize-handle, .rotate-handle { display: none; }
-        .resize-handle { position: absolute; width: 12px; height: 12px; background: #3b82f6; border: 1px solid white; border-radius: 50%; bottom: -6px; right: -6px; cursor: se-resize; }
-        .rotate-handle { position: absolute; width: 12px; height: 12px; background: #f59e0b; border: 1px solid white; border-radius: 50%; top: -20px; left: calc(50% - 6px); cursor: grab; }
+        .resize-handle { position: absolute; width: 12px; height: 12px; background: #3b82f6; border: 1px solid white; border-radius: 50%; bottom: -6px; right: -6px; cursor: se-resize; z-index: 10; }
+        .rotate-handle { position: absolute; width: 12px; height: 12px; background: #f59e0b; border: 1px solid white; border-radius: 50%; top: -20px; left: calc(50% - 6px); cursor: grab; z-index: 10;}
         .rotate-handle::before { content: ''; position: absolute; width: 2px; height: 14px; background: #f59e0b; left: 5px; bottom: 8px; }
+        
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4A5568; cursor: pointer; border-radius: 50%; }
     </style>
 </head>
@@ -53,14 +55,14 @@
             <div><h3 class="font-bold text-gray-800 text-lg">Document Style</h3><label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label><select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"><option value="none" selected>None (Blank)</option><option value="ovation">Ovation Invoice</option><option value="hotel">Hotel Bill</option><option value="lined">Lined Paper</option><option value="columns">Vertical Columns</option></select></div>
             <div id="text-controls" class="hidden border-t pt-4">
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
-                    <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
-                    <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
+                     <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
+                     <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
+                     <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
                  </div>
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
-                    <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
-                    <div><label class="block text-sm">Ink Variation</label><input type="range" id="ink-control" class="w-full" min="0" max="10"></div>
+                     <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
+                     <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
+                     <div><label class="block text-sm">Ink Saturation</label><input type="range" id="ink-control" class="w-full" min="0" max="10" value="4"></div>
                  </div>
             </div>
         </div>
@@ -70,6 +72,9 @@
             <button id="addTextButton" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-md">Add Text Block</button>
             <button id="addImageButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md">Add Image</button>
             <input type="file" id="imageInput" class="hidden" accept="image/*">
+            <button id="saveButton" class="px-6 py-3 bg-teal-600 text-white font-bold rounded-md">Save Project</button>
+            <button id="loadButton" class="px-6 py-3 bg-orange-500 text-white font-bold rounded-md">Load Project</button>
+            <input type="file" id="loadInput" class="hidden" accept=".json">
             <button id="exportPdfButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md flex items-center">Export PDF</button>
         </div>
 
@@ -88,9 +93,11 @@
             const addTextButton = document.getElementById('addTextButton');
             const addImageButton = document.getElementById('addImageButton');
             const imageInput = document.getElementById('imageInput');
+            const saveButton = document.getElementById('saveButton');
+            const loadButton = document.getElementById('loadButton');
+            const loadInput = document.getElementById('loadInput');
             const exportPdfButton = document.getElementById('exportPdfButton');
 
-            // Control elements
             const fontControl = document.getElementById('font-control');
             const sizeControl = document.getElementById('size-control');
             const corruptionControl = document.getElementById('corruption-control');
@@ -104,7 +111,7 @@
             
             const templates = {
                 none: 'none',
-                ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23cccccc' stroke-width='1' fill='none' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Cpath stroke='%23cccccc' stroke-width='2' fill='none' d='M1 1 H 799 V 999 H 1 Z'/%3E%3C/svg%3E")`,
+                ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23ccc' stroke-width='1' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23ccc' stroke-width='2'/%3E%3C/svg%3E")`,
                 hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23333' stroke-width='1' d='M100 200 H 500 M 100 600 H 500 M 300 200 V 600'/%3E%3C/svg%3E")`,
                 lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='26'%3E%3Cpath d='M0 25 H 100' stroke='%23e2e8f0' stroke-width='1'/%3E%3C/svg%3E")`,
                 columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23e5e7eb' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
@@ -114,25 +121,46 @@
 
             function exportToPDF() {
                 deselectAll();
-                html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+
+                // Temporarily modify styles for accurate capture
+                const textBlocks = document.querySelectorAll('.output-text');
+                textBlocks.forEach(block => {
+                    block.style.overflow = 'visible'; // Allow content to overflow for capture
+                });
+
+                const options = {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true
+                };
+
+                html2canvas(outputContainer, options).then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
                     pdf.save("historical-document.pdf");
-                }).catch(err => console.error("Error exporting to PDF:", err));
+
+                    // Restore original styles
+                    textBlocks.forEach(block => {
+                        block.style.overflow = 'hidden';
+                    });
+                }).catch(err => {
+                    console.error("Error exporting to PDF:", err);
+                    // Ensure styles are restored even if there's an error
+                    textBlocks.forEach(block => {
+                        block.style.overflow = 'hidden';
+                    });
+                });
             }
 
             function createStyledChar(char, jitter, rotation, ink, corruption) {
                 const span = document.createElement('span');
                 span.className = 'styled-char';
-
                 let charToRender = char;
-                const corruptionChance = corruption; // Slider value is direct percentage
-                if (Math.random() * 100 < corruptionChance) {
+                if (Math.random() * 100 < corruption) {
                     const corruptedChars = ['█', '▓', '▒', '░', '#', '?', '&', '%', '$', '@'];
                     charToRender = corruptedChars[Math.floor(Math.random() * corruptedChars.length)];
                 }
-
                 span.innerHTML = (charToRender === ' ') ? '&nbsp;' : charToRender;
                 
                 const jitterFactor = jitter / 10.0;
@@ -142,10 +170,22 @@
                 const xOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const yOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const rot = (Math.random() - 0.5) * 2.0 * rotationFactor;
-                const opacity = 1 - (Math.random() * 0.4 * inkFactor);
                 
+                // --- Revised Ink Saturation Logic ---
+                // 1. Base opacity variation for all characters.
+                let opacity = 1.0 - (Math.random() * inkFactor * 0.6);
+                // 2. Chance for a more significant ink "blot" effect.
+                const blotChance = inkFactor * 0.15;
+                if (Math.random() < blotChance) {
+                    span.style.fontWeight = 'bold';
+                    const blurAmount = (Math.random() * inkFactor * 0.8) + 0.1;
+                    const blotOpacity = 0.4 + (Math.random() * 0.4);
+                    span.style.textShadow = `0 0 ${blurAmount.toFixed(2)}px rgba(0,0,0,${blotOpacity.toFixed(2)})`;
+                    opacity = Math.min(1.0, opacity + 0.3);
+                }
+
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rot}deg)`;
-                span.style.opacity = opacity;
+                span.style.opacity = Math.max(0.25, Math.min(1, opacity));
                 return span;
             }
 
@@ -155,7 +195,7 @@
                 contentDiv.innerHTML = '';
                 contentDiv.className = `output-text ${font}`;
                 contentDiv.style.fontSize = `${size}px`;
-                const lines = text.replace(/\u00A0/g, ' ').split('\n');
+                const lines = (text || '').replace(/\u00A0/g, ' ').split('\n');
                 lines.forEach(line => {
                     const lineDiv = document.createElement('div');
                     for (const char of line) {
@@ -166,68 +206,60 @@
                 });
             }
 
-            function createTextBlock() {
-                const id = Date.now();
+            function createElement(type, initialData) {
+                const id = initialData?.id || Date.now();
                 const wrapper = document.createElement('div');
-                wrapper.className = 'output-text-block';
+                wrapper.className = 'draggable-wrapper';
                 wrapper.dataset.id = id;
-                wrapper.style.left = '100px';
-                wrapper.style.top = '100px';
-                wrapper.style.width = '300px';
-                wrapper.style.transform = 'rotate(0deg)';
 
-                const textDiv = document.createElement('div');
-                textDiv.className = 'output-text';
-                textDiv.contentEditable = "false";
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle br';
+                const rotateHandle = document.createElement('div');
+                rotateHandle.className = 'rotate-handle';
                 
-                const resizeHandle = document.createElement('div');
-                resizeHandle.className = 'resize-handle br';
-                const rotateHandle = document.createElement('div');
-                rotateHandle.className = 'rotate-handle';
+                let elData;
 
-                wrapper.append(textDiv, resizeHandle, rotateHandle);
+                if (type === 'text') {
+                    wrapper.classList.add('output-text-block');
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'output-text';
+                    textDiv.contentEditable = "false";
+                    wrapper.append(textDiv, resizeHandle, rotateHandle);
+                    elData = initialData ? { ...initialData, el: wrapper } : {
+                        id, el: wrapper, type: 'text', text: 'New Text Block', 
+                        font: 'font-special-elite', size: 16, 
+                        jitter: 5, rotation: 2, ink: 4, corruption: 0,
+                        x: 100, y: 100, width: 300, rotation: 0
+                    };
+                    renderText(elData);
+                } else { // type === 'image'
+                    wrapper.classList.add('draggable-image-wrapper');
+                    const img = document.createElement('img');
+                    img.src = initialData.src;
+                    wrapper.append(img, resizeHandle, rotateHandle);
+                    elData = { ...initialData, id, el: wrapper };
+                    if (elData.height) {
+                         wrapper.style.height = `${elData.height}px`;
+                    }
+                }
+                
+                wrapper.style.left = `${elData.x}px`;
+                wrapper.style.top = `${elData.y}px`;
+                wrapper.style.width = `${elData.width}px`;
+                wrapper.style.transform = `rotate(${elData.rotation || 0}deg)`;
 
                 contentLayer.appendChild(wrapper);
-                const elData = {
-                    id, el: wrapper, type: 'text', text: 'New Text Block', 
-                    font: 'font-special-elite', size: 16, 
-                    jitter: 5, rotation: 2, ink: 4, corruption: 0,
-                    x: 100, y: 100, width: 300, rotation: 0
-                };
                 elements.push(elData);
-                renderText(elData);
-                selectElement(elData);
-            }
-
-            function createImageElement(src) {
-                const id = Date.now();
-                const wrapper = document.createElement('div');
-                wrapper.className = 'draggable-image-wrapper';
-                wrapper.dataset.id = id;
-                wrapper.style.left = '50px';
-                wrapper.style.top = '50px';
-                wrapper.style.width = '150px';
-                wrapper.style.transform = 'rotate(0deg)';
-                const img = document.createElement('img');
-                img.src = src;
-                const resizeHandle = document.createElement('div');
-                resizeHandle.className = 'resize-handle br';
-                const rotateHandle = document.createElement('div');
-                rotateHandle.className = 'rotate-handle';
-                wrapper.append(img, resizeHandle, rotateHandle);
-                contentLayer.appendChild(wrapper);
-                const elData = { id, el: wrapper, type: 'image', src, x: 50, y: 50, width: 150, rotation: 0 };
-                elements.push(elData);
-                selectElement(elData);
+                if (!initialData?.loadedFromFile) selectElement(elData);
             }
             
             function updateControls() {
-                if (!activeElement || activeElement.type !== 'text') {
+                if (!activeElement || activeElement.type === 'image') {
                     controlsContainer.style.display = 'none';
                     return;
                 }
                 
-                controlsContainer.style.display = 'grid';
+                controlsContainer.style.display = 'block';
                 const { font, size, corruption, jitter, rotation, ink } = activeElement;
                 fontControl.innerHTML = getFontOptions(font);
                 sizeControl.value = size;
@@ -238,7 +270,20 @@
             }
 
             function getFontOptions(selectedFont) {
-                const fonts = { 'font-special-elite': 'Classic Typewriter', 'font-cutive-mono': 'Clean Mono', 'font-bogart': 'Classic Serif', 'font-vt323': 'Dot-Matrix' };
+                const fonts = { 
+                    'font-special-elite': 'Classic Typewriter', 
+                    'font-cutive-mono': 'Clean Mono', 
+                    'font-bogart': 'Classic Serif', 
+                    'font-vt323': 'Dot-Matrix',
+                    'font-anonymous-pro': 'Anonymous Pro',
+                    'font-cousine': 'Courier New',
+                    'font-ibm-plex-mono': 'IBM Plex Mono',
+                    'font-libre-baskerville': 'Baskerville',
+                    'font-oranienbaum': 'Oranienbaum',
+                    'font-tinos': 'Tinos',
+                    'font-unifrakturmaguntia': 'Blackletter',
+                    'font-vollkorn': 'Vollkorn'
+                };
                 return Object.entries(fonts).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
             }
             
@@ -259,16 +304,12 @@
             }
 
             document.addEventListener('mousedown', (e) => {
-                const wrapper = e.target.closest('.output-text-block, .draggable-image-wrapper');
-                
-                if (!wrapper) {
-                    if (!e.target.closest('#text-controls')) deselectAll();
-                    return;
-                }
+                const wrapper = e.target.closest('.draggable-wrapper');
+                if (!wrapper) { if (!e.target.closest('#text-controls')) deselectAll(); return; }
                 
                 const elData = elements.find(el => el.id == wrapper.dataset.id);
                 if (!elData) return;
-
+                
                 selectElement(elData);
 
                 if (e.detail === 2 && activeElement.type === 'text') {
@@ -277,9 +318,8 @@
                     textDiv.focus();
                     const range = document.createRange();
                     range.selectNodeContents(textDiv);
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
                     
                     const elementBeingEdited = activeElement;
                     textDiv.addEventListener('blur', () => {
@@ -292,18 +332,23 @@
                     return;
                 }
                 
-                const rect = wrapper.getBoundingClientRect();
                 action.startX = e.clientX;
                 action.startY = e.clientY;
-                action.elData = activeElement;
+                action.elData = elData;
+                action.startElX = elData.x;
+                action.startElY = elData.y;
+                action.startW = elData.el.offsetWidth;
+                action.startH = elData.el.offsetHeight;
 
                 if (e.target.classList.contains('resize-handle')) {
                     action.type = 'resize';
-                    action.startW = rect.width;
                 } else if (e.target.classList.contains('rotate-handle')) {
                     action.type = 'rotate';
-                    action.centerX = wrapper.offsetLeft + rect.width / 2;
-                    action.centerY = wrapper.offsetTop + rect.height / 2;
+                    const rect = elData.el.getBoundingClientRect();
+                    action.centerX = rect.left + rect.width / 2;
+                    action.centerY = rect.top + rect.height / 2;
+                    action.startRot = elData.rotation || 0;
+                    action.startAngleRad = Math.atan2(e.clientY - action.centerY, e.clientX - action.centerX);
                 } else {
                     action.type = 'drag';
                 }
@@ -312,44 +357,61 @@
             document.addEventListener('mousemove', (e) => {
                 if (!action.type || !action.elData) return;
                 e.preventDefault();
+
                 const dx = e.clientX - action.startX;
                 const dy = e.clientY - action.startY;
+                const elData = action.elData;
+
                 if (action.type === 'drag') {
-                    action.elData.x += dx;
-                    action.elData.y += dy;
-                    action.elData.el.style.left = `${action.elData.x}px`;
-                    action.elData.el.style.top = `${action.elData.y}px`;
-                    action.startX = e.clientX;
-                    action.startY = e.clientY;
+                    elData.x = action.startElX + dx;
+                    elData.y = action.startElY + dy;
+                    elData.el.style.left = `${elData.x}px`;
+                    elData.el.style.top = `${elData.y}px`;
                 } else if (action.type === 'resize') {
-                    action.elData.width = Math.max(30, action.startW + dx);
-                    action.elData.el.style.width = `${action.elData.width}px`;
+                    const newWidth = Math.max(30, action.startW + dx);
+                    elData.width = newWidth;
+                    elData.el.style.width = `${newWidth}px`;
+                    if (elData.type === 'image' && elData.aspectRatio) {
+                        const newHeight = newWidth / elData.aspectRatio;
+                        elData.height = newHeight;
+                        elData.el.style.height = `${newHeight}px`;
+                    }
                 } else if (action.type === 'rotate') {
-                    const angle = Math.atan2(e.clientY - (outputContainer.offsetTop + action.centerY), e.clientX - (outputContainer.offsetLeft + action.centerX)) * (180 / Math.PI) + 90;
-                    action.elData.rotation = angle;
-                    action.elData.el.style.transform = `rotate(${angle}deg)`;
+                    const currentAngle = Math.atan2(e.clientY - action.centerY, e.clientX - action.centerX);
+                    const deltaAngle = currentAngle - action.startAngleRad;
+                    const newRotation = action.startRot + deltaAngle * (180 / Math.PI);
+                    elData.rotation = newRotation;
+                    elData.el.style.transform = `rotate(${newRotation}deg)`;
                 }
             });
 
-            document.addEventListener('mouseup', () => { action.type = null; action.elData = null; });
+            document.addEventListener('mouseup', () => { 
+                action.type = null; 
+                action.elData = null; 
+            });
             
             document.addEventListener('keydown', (e) => {
                  if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
-                     const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
-                     if(!targetIsEditable) {
-                        e.preventDefault();
-                        activeElement.el.remove();
-                        elements = elements.filter(el => el.id !== activeElement.id);
-                        deselectAll();
-                     }
-                }
+                      const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
+                      if(!targetIsEditable) {
+                           e.preventDefault();
+                           activeElement.el.remove();
+                           elements = elements.filter(el => el.id !== activeElement.id);
+                           deselectAll();
+                      }
+                 }
             });
 
             frameSelector.addEventListener('change', () => {
                 const template = templates[frameSelector.value];
                 outputContainer.style.backgroundImage = template !== 'none' ? template : '';
-                if(frameSelector.value === 'lined') outputContainer.style.backgroundSize = '100% 1.6em';
-                else outputContainer.style.backgroundSize = '100% 100%';
+                if(frameSelector.value === 'lined') {
+                    outputContainer.style.backgroundSize = 'auto';
+                    outputContainer.style.backgroundRepeat = 'repeat-y';
+                } else {
+                    outputContainer.style.backgroundSize = '100% 100%';
+                    outputContainer.style.backgroundRepeat = 'no-repeat';
+                }
             });
             
             fontControl.addEventListener('change', (e) => { if(activeElement) { activeElement.font = e.target.value; renderText(activeElement); }});
@@ -359,19 +421,74 @@
             rotationControl.addEventListener('input', (e) => { if(activeElement) { activeElement.rotation = e.target.value; renderText(activeElement); }});
             inkControl.addEventListener('input', (e) => { if(activeElement) { activeElement.ink = e.target.value; renderText(activeElement); }});
             
-            addTextButton.addEventListener('click', createTextBlock);
+            addTextButton.addEventListener('click', () => createElement('text'));
             addImageButton.addEventListener('click', () => imageInput.click());
+            
             imageInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
                     const reader = new FileReader();
-                    reader.onload = (re) => createImageElement(re.target.result);
+                    reader.onload = (re) => {
+                        const imgSrc = re.target.result;
+                        const tempImg = new Image();
+                        tempImg.onload = () => { // Use onload to get natural dimensions
+                            const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
+                            const initialWidth = 150;
+                            createElement('image', {
+                                src: imgSrc,
+                                x: 50, y: 50,
+                                width: initialWidth,
+                                height: initialWidth / aspectRatio,
+                                rotation: 0,
+                                aspectRatio: aspectRatio
+                            });
+                        };
+                        tempImg.src = imgSrc;
+                    };
                     reader.readAsDataURL(e.target.files[0]);
                 }
             });
             exportPdfButton.addEventListener('click', exportToPDF);
             
+             // --- Save/Load Logic ---
+            saveButton.addEventListener('click', () => {
+                const saveData = {
+                    template: frameSelector.value,
+                    elements: elements.map(el => {
+                        const { el: domEl, ...data } = el;
+                        return data;
+                    })
+                };
+                const dataStr = JSON.stringify(saveData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'historical-document.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            loadButton.addEventListener('click', () => loadInput.click());
+            loadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    const saveData = JSON.parse(re.target.result);
+                    elements = [];
+                    contentLayer.innerHTML = '';
+                    frameSelector.value = saveData.template;
+                    frameSelector.dispatchEvent(new Event('change'));
+                    saveData.elements.forEach(elData => {
+                        createElement(elData.type, {...elData, loadedFromFile: true});
+                    });
+                };
+                reader.readAsText(file);
+            });
+
             // Initial Load
             frameSelector.dispatchEvent(new Event('change'));
+            createElement('text'); // Add an initial text block to start
         });
     </script>
 </body>
