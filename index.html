@@ -40,6 +40,29 @@
         
         /* Slider styling */
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4A5568; cursor: pointer; border-radius: 50%; }
+        
+        /* --- Frame Styles --- */
+        #outputContainer { transition: all 0.2s ease-in-out; }
+        .frame-simple { border: 1px solid #9ca3af; }
+        .frame-double { border: 4px double #9ca3af; }
+        .frame-corners {
+            --corner-size: 25px;
+            --corner-thickness: 2px;
+            --corner-color: #6b7280;
+            background-image:
+                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
+                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
+                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
+                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color));
+            background-repeat: no-repeat;
+            background-position: 
+                1rem 1rem, 1rem 1rem, /* Top-left */
+                calc(100% - 1rem) 1rem, calc(100% - 1rem) 1rem, /* Top-right */
+                1rem calc(100% - 1rem), 1rem calc(100% - 1rem), /* Bottom-left */
+                calc(100% - 1rem) calc(100% - 1rem), calc(100% - 1rem) calc(100% - 1rem); /* Bottom-right */
+            background-size: var(--corner-size) var(--corner-thickness), var(--corner-thickness) var(--corner-size);
+        }
+
     </style>
 </head>
 <body class="bg-gray-200 min-h-screen flex items-center justify-center p-4">
@@ -61,8 +84,21 @@
         
         <!-- Controls Section -->
         <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
-            <!-- Header Controls -->
+            <!-- Document Controls -->
             <div class="space-y-4">
+                 <h3 class="font-bold text-gray-800 text-lg">Document Style</h3>
+                 <div>
+                    <label for="frameSelector" class="block text-sm font-medium text-gray-700">Frame Style</label>
+                    <select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="frame-none" selected>None</option>
+                        <option value="frame-simple">Simple Border</option>
+                        <option value="frame-double">Double Border</option>
+                        <option value="frame-corners">Corner Brackets</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Header Controls -->
+            <div class="space-y-4 pt-4 border-t">
                 <h3 class="font-bold text-gray-800 text-lg">Header Controls</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
                      <div>
@@ -157,6 +193,7 @@
             
             // --- Controls ---
             const allControls = document.querySelectorAll('.control-item, #headerText, #bodyText');
+            const frameSelector = document.getElementById('frameSelector');
 
             // Header Controls
             const headerFontSelector = document.getElementById('headerFontSelector');
@@ -288,7 +325,16 @@
                 });
             }
             
+            const updateFrameStyle = () => {
+                const frameClass = frameSelector.value;
+                outputContainer.classList.remove('frame-none', 'frame-simple', 'frame-double', 'frame-corners');
+                if (frameClass !== 'frame-none') {
+                    outputContainer.classList.add(frameClass);
+                }
+            };
+
             const fullRender = () => {
+                updateFrameStyle();
                 renderText(headerOutput, headerText.value, headerFontSelector.value, headerSizeSlider.value, headerIrregularitySlider.value);
                 renderText(bodyOutput, bodyText.value, bodyFontSelector.value, bodySizeSlider.value, bodyIrregularitySlider.value);
             };
@@ -299,6 +345,7 @@
                 control.addEventListener('input', fullRender);
                 control.addEventListener('change', fullRender); // For select dropdowns
             });
+            frameSelector.addEventListener('change', fullRender);
 
             // --- Initial State ---
             headerText.value = `      *VECTOR GRAPHICS & REPAIR*
