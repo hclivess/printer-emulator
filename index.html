@@ -41,7 +41,8 @@
         .draggable-wrapper { position: absolute; cursor: move; border: 2px dashed transparent; transition: border-color 0.2s; }
         .draggable-wrapper:hover, .draggable-wrapper.selected { border-color: #3b82f6; }
         .draggable-wrapper.selected .resize-handle, .draggable-wrapper.selected .rotate-handle { display: block; }
-        .draggable-wrapper img { width: 100%; height: 100%; pointer-events: none; user-select: none; }
+        /* Image resizing fix: Set height to auto to maintain aspect ratio */
+        .draggable-wrapper img { width: 100%; height: auto; pointer-events: none; user-select: none; }
         
         /* Handles for resize and rotate actions, hidden by default */
         .resize-handle, .rotate-handle { display: none; }
@@ -244,28 +245,33 @@
                 
                 let elData;
 
+                // Robustly create element data by merging defaults with initialData
                 if (type === 'text') {
                     wrapper.classList.add('output-text-block');
                     const textDiv = document.createElement('div');
                     textDiv.className = 'output-text';
                     textDiv.contentEditable = "false";
                     wrapper.append(textDiv, resizeHandle, rotateHandle);
-                    elData = initialData ? { ...initialData, el: wrapper } : {
-                        id, el: wrapper, type: 'text', text: 'New Text Block', 
-                        font: 'font-special-elite', size: 16, 
+
+                    const textDefaults = {
+                        text: 'New Text Block', font: 'font-special-elite', size: 16,
                         jitter: 5, rotation: 2, ink: 4, corruption: 0, blot: 0,
-                        x: 100, y: 100, width: 300, rotation: 0
+                        x: 100, y: 100, width: 300
                     };
+
+                    elData = { ...textDefaults, ...initialData, id, el: wrapper, type: 'text' };
                     renderText(elData);
                 } else { // type === 'image'
                     wrapper.classList.add('draggable-image-wrapper');
                     const img = document.createElement('img');
-                    img.src = initialData.src;
+                    img.src = initialData?.src; // Safely access src
                     wrapper.append(img, resizeHandle, rotateHandle);
-                    elData = { ...initialData, id, el: wrapper };
-                    if (elData.height) {
-                         wrapper.style.height = `${elData.height}px`;
-                    }
+
+                    const imageDefaults = {
+                        x: 50, y: 50, width: 150, rotation: 0, aspectRatio: 1
+                    };
+
+                    elData = { ...imageDefaults, ...initialData, id, el: wrapper, type: 'image' };
                 }
                 
                 wrapper.style.left = `${elData.x}px`;
@@ -394,11 +400,6 @@
                     const newWidth = Math.max(30, action.startW + dx);
                     elData.width = newWidth;
                     elData.el.style.width = `${newWidth}px`;
-                    if (elData.type === 'image' && elData.aspectRatio) {
-                        const newHeight = newWidth / elData.aspectRatio;
-                        elData.height = newHeight;
-                        elData.el.style.height = `${newHeight}px`;
-                    }
                 } else if (action.type === 'rotate') {
                     const currentAngle = Math.atan2(e.clientY - action.centerY, e.clientX - action.centerX);
                     const deltaAngle = currentAngle - action.startAngleRad;
@@ -463,7 +464,7 @@
                         const tempImg = new Image();
                         tempImg.onload = () => {
                             const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
-                            createElement('image', { src: imgSrc, x: 50, y: 50, width: 150, height: 150 / aspectRatio, rotation: 0, aspectRatio: aspectRatio });
+                            createElement('image', { src: imgSrc, x: 50, y: 50, width: 150, aspectRatio: aspectRatio, rotation: 0 });
                         };
                         tempImg.src = imgSrc;
                     };
@@ -494,14 +495,19 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (re) => {
-                    const saveData = JSON.parse(re.target.result);
-                    elements = [];
-                    contentLayer.innerHTML = '';
-                    frameSelector.value = saveData.template;
-                    frameSelector.dispatchEvent(new Event('change'));
-                    saveData.elements.forEach(elData => {
-                        createElement(elData.type, {...elData, loadedFromFile: true});
-                    });
+                    try {
+                        const saveData = JSON.parse(re.target.result);
+                        elements = [];
+                        contentLayer.innerHTML = '';
+                        frameSelector.value = saveData.template || 'none';
+                        frameSelector.dispatchEvent(new Event('change'));
+                        saveData.elements?.forEach(elData => {
+                            createElement(elData.type, {...elData, loadedFromFile: true});
+                        });
+                    } catch (error) {
+                        console.error("Error loading or parsing file:", error);
+                        alert("Could not load the project file. It might be corrupted.");
+                    }
                 };
                 reader.readAsText(file);
             });
