@@ -1,9 +1,3 @@
-```
-
-And here is the updated README file.
-
-
-```markdown
 # Historical Document Generator
 
 ## Overview
