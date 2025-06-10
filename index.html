@@ -13,8 +13,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .output-text { color: #2d3748; white-space: pre-wrap; outline: none; height: 100%; overflow: hidden;}
+        /* Core style for the text blocks, ensuring it's black */
+        .output-text { color: #000000; white-space: pre-wrap; outline: none; height: 100%; overflow: hidden;}
         
+        /* Font family definitions */
         .font-vt323 { font-family: 'VT323', monospace; }
         .font-special-elite { font-family: 'Special Elite', cursive; }
         .font-cutive-mono { font-family: 'Cutive Mono', monospace; }
@@ -29,20 +31,25 @@
         .font-unifrakturmaguntia { font-family: 'UnifrakturMaguntia', cursive; }
         .font-vollkorn { font-family: 'Vollkorn', serif; }
 
+        /* Style for individual characters to allow for effects */
         .styled-char { display: inline-block; }
         
+        /* Container for the document output */
         #outputContainer { background-size: 100% 100%; background-position: center; background-repeat: no-repeat; }
         
+        /* Wrapper for draggable elements */
         .draggable-wrapper { position: absolute; cursor: move; border: 2px dashed transparent; transition: border-color 0.2s; }
         .draggable-wrapper:hover, .draggable-wrapper.selected { border-color: #3b82f6; }
         .draggable-wrapper.selected .resize-handle, .draggable-wrapper.selected .rotate-handle { display: block; }
         .draggable-wrapper img { width: 100%; height: 100%; pointer-events: none; user-select: none; }
         
+        /* Handles for resize and rotate actions, hidden by default */
         .resize-handle, .rotate-handle { display: none; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: #3b82f6; border: 1px solid white; border-radius: 50%; bottom: -6px; right: -6px; cursor: se-resize; z-index: 10; }
         .rotate-handle { position: absolute; width: 12px; height: 12px; background: #f59e0b; border: 1px solid white; border-radius: 50%; top: -20px; left: calc(50% - 6px); cursor: grab; z-index: 10;}
         .rotate-handle::before { content: ''; position: absolute; width: 2px; height: 14px; background: #f59e0b; left: 5px; bottom: 8px; }
         
+        /* Custom styling for range input thumbs */
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4A5568; cursor: pointer; border-radius: 50%; }
     </style>
 </head>
@@ -52,7 +59,18 @@
         
         <!-- Controls -->
         <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
-            <div><h3 class="font-bold text-gray-800 text-lg">Document Style</h3><label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label><select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"><option value="none" selected>None (Blank)</option><option value="ovation">Ovation Invoice</option><option value="hotel">Hotel Bill</option><option value="lined">Lined Paper</option><option value="columns">Vertical Columns</option></select></div>
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg">Document Style</h3>
+                <label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label>
+                <select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                    <option value="none" selected>None (Blank)</option>
+                    <option value="ovation">Ovation Invoice</option>
+                    <option value="hotel">Hotel Bill</option>
+                    <option value="boat">Boat Invoice</option>
+                    <option value="lined">Lined Paper</option>
+                    <option value="columns">Vertical Columns</option>
+                </select>
+            </div>
             <div id="text-controls" class="hidden border-t pt-4">
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
@@ -109,16 +127,19 @@
             let activeElement = null;
             let action = { type: null, startX: 0, startY: 0, startW: 0, startH: 0, startRot: 0 };
             
+            // Templates for document backgrounds. Stroke colors are now #000 (black).
             const templates = {
                 none: 'none',
-                ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23ccc' stroke-width='1' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23ccc' stroke-width='2'/%3E%3C/svg%3E")`,
-                hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23333' stroke-width='1' d='M100 200 H 500 M 100 600 H 500 M 300 200 V 600'/%3E%3C/svg%3E")`,
-                lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='26'%3E%3Cpath d='M0 25 H 100' stroke='%23e2e8f0' stroke-width='1'/%3E%3C/svg%3E")`,
-                columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23e5e7eb' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
+                ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")`,
+                hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M100 200 H 500 M 100 600 H 500 M 300 200 V 600'/%3E%3C/svg%3E")`,
+                boat: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cg stroke='%23000' stroke-width='2'%3E%3Cpath d='M0 330 H 800 M0 380 H 800 M0 800 H 800 M560 850 H 800 M560 900 H 800 M0 950 H 800' /%3E%3Cpath d='M80 330 V 800 M560 330 V 950 M680 330 V 950' /%3E%3C/g%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")`,
+                lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='26'%3E%3Cpath d='M0 25 H 100' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E")`,
+                columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
             };
 
             const { jsPDF } = window.jspdf;
 
+            // Function to export the current view to a PDF file
             function exportToPDF() {
                 deselectAll();
 
@@ -153,6 +174,7 @@
                 });
             }
 
+            // Creates a single styled character with various effects
             function createStyledChar(char, jitter, rotation, ink, corruption) {
                 const span = document.createElement('span');
                 span.className = 'styled-char';
@@ -165,30 +187,51 @@
                 
                 const jitterFactor = jitter / 10.0;
                 const rotationFactor = rotation / 10.0;
-                const inkFactor = ink / 10.0;
                 
                 const xOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const yOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const rot = (Math.random() - 0.5) * 2.0 * rotationFactor;
                 
-                // --- Revised Ink Saturation Logic ---
-                // 1. Base opacity variation for all characters.
-                let opacity = 1.0 - (Math.random() * inkFactor * 0.6);
-                // 2. Chance for a more significant ink "blot" effect.
-                const blotChance = inkFactor * 0.15;
+                // --- New, more believable Ink Saturation Logic ---
+                // This logic simulates a typewriter ribbon.
+                // High saturation = dark, consistent ink with occasional blots.
+                // Low saturation = faint, inconsistent ink like a used ribbon.
+                const inkValue = parseInt(ink, 10); // Slider value from 0-10.
+
+                // 1. Determine base opacity and randomness based on ink level.
+                // A high ink value should mean high opacity and low randomness.
+                const baseOpacity = 0.4 + (inkValue / 10.0) * 0.6; // Ranges from 0.4 (faint) to 1.0 (dark)
+                const opacityVariation = (1.0 - (inkValue / 10.0)) * 0.5; // Variation is high when ink is low. Ranges from 0.5 down to 0.0.
+
+                // 2. Calculate the final opacity for the character with random variation.
+                const randomFlicker = (Math.random() - 0.5) * opacityVariation;
+                let finalOpacity = baseOpacity + randomFlicker;
+
+                // 3. Handle blotting (heavy ink spots), more likely with high saturation (a fresh ribbon).
+                const blotChance = (inkValue / 10.0) * 0.08; // Max 8% chance for a blotch at highest saturation.
                 if (Math.random() < blotChance) {
                     span.style.fontWeight = 'bold';
-                    const blurAmount = (Math.random() * inkFactor * 0.8) + 0.1;
-                    const blotOpacity = 0.4 + (Math.random() * 0.4);
+                    const blurAmount = (Math.random() * (inkValue / 10.0) * 0.7) + 0.2; // Blur is stronger with more ink.
+                    const blotOpacity = 0.5 + (Math.random() * 0.5);
                     span.style.textShadow = `0 0 ${blurAmount.toFixed(2)}px rgba(0,0,0,${blotOpacity.toFixed(2)})`;
-                    opacity = Math.min(1.0, opacity + 0.3);
+                    finalOpacity = Math.min(1.0, finalOpacity + 0.2); // Blot makes the character darker.
                 }
 
+                // 4. Handle very faint characters, more likely with low saturation (a dry ribbon).
+                const faintChance = (1.0 - (inkValue / 10.0)) * 0.1; // Max 10% chance for a very faint char at lowest saturation.
+                if (Math.random() < faintChance) {
+                    finalOpacity *= 0.6; // Make it significantly fainter.
+                }
+
+                // Apply transform and the final calculated opacity.
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rot}deg)`;
-                span.style.opacity = Math.max(0.25, Math.min(1, opacity));
+                // Ensure opacity stays within a reasonable, visible range [0.1, 1.0].
+                span.style.opacity = Math.max(0.1, Math.min(1, finalOpacity));
+
                 return span;
             }
 
+            // Renders the full text of an element with all applied styles
             function renderText(elData) {
                 const { el, text, font, size, jitter, rotation, ink, corruption } = elData;
                 const contentDiv = el.querySelector('.output-text');
@@ -206,6 +249,7 @@
                 });
             }
 
+            // Creates a new element (text or image) and adds it to the canvas
             function createElement(type, initialData) {
                 const id = initialData?.id || Date.now();
                 const wrapper = document.createElement('div');
@@ -253,6 +297,7 @@
                 if (!initialData?.loadedFromFile) selectElement(elData);
             }
             
+            // Updates the control panel based on the selected element's properties
             function updateControls() {
                 if (!activeElement || activeElement.type === 'image') {
                     controlsContainer.style.display = 'none';
@@ -269,6 +314,7 @@
                 inkControl.value = ink;
             }
 
+            // Generates the HTML for the font selector dropdown
             function getFontOptions(selectedFont) {
                 const fonts = { 
                     'font-special-elite': 'Classic Typewriter', 
@@ -287,6 +333,7 @@
                 return Object.entries(fonts).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
             }
             
+            // Selects an element, showing its controls and selection border
             function selectElement(elData) {
                 if (activeElement === elData) return;
                 deselectAll();
@@ -295,6 +342,7 @@
                 updateControls();
             }
 
+            // Deselects any active element
             function deselectAll() {
                 if (activeElement) {
                     activeElement.el.classList.remove('selected');
@@ -303,6 +351,7 @@
                 updateControls();
             }
 
+            // Main event listener for mousedown to handle selection and actions
             document.addEventListener('mousedown', (e) => {
                 const wrapper = e.target.closest('.draggable-wrapper');
                 if (!wrapper) { if (!e.target.closest('#text-controls')) deselectAll(); return; }
@@ -312,6 +361,7 @@
                 
                 selectElement(elData);
 
+                // Double-click to edit text
                 if (e.detail === 2 && activeElement.type === 'text') {
                     const textDiv = activeElement.el.querySelector('.output-text');
                     textDiv.contentEditable = 'true';
@@ -332,6 +382,7 @@
                     return;
                 }
                 
+                // Initialize action (drag, resize, rotate)
                 action.startX = e.clientX;
                 action.startY = e.clientY;
                 action.elData = elData;
@@ -354,6 +405,7 @@
                 }
             });
 
+            // Handles mouse movement for drag, resize, and rotate
             document.addEventListener('mousemove', (e) => {
                 if (!action.type || !action.elData) return;
                 e.preventDefault();
@@ -385,28 +437,31 @@
                 }
             });
 
+            // Ends any active action on mouse up
             document.addEventListener('mouseup', () => { 
                 action.type = null; 
                 action.elData = null; 
             });
             
+            // Handles delete key to remove the selected element
             document.addEventListener('keydown', (e) => {
                  if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
-                      const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
-                      if(!targetIsEditable) {
-                           e.preventDefault();
-                           activeElement.el.remove();
-                           elements = elements.filter(el => el.id !== activeElement.id);
-                           deselectAll();
-                      }
+                     const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
+                     if(!targetIsEditable) {
+                         e.preventDefault();
+                         activeElement.el.remove();
+                         elements = elements.filter(el => el.id !== activeElement.id);
+                         deselectAll();
+                     }
                  }
             });
 
+            // Event listener for changing the background template
             frameSelector.addEventListener('change', () => {
                 const template = templates[frameSelector.value];
                 outputContainer.style.backgroundImage = template !== 'none' ? template : '';
                 if(frameSelector.value === 'lined') {
-                    outputContainer.style.backgroundSize = 'auto';
+                    outputContainer.style.backgroundSize = '100% 26px';
                     outputContainer.style.backgroundRepeat = 'repeat-y';
                 } else {
                     outputContainer.style.backgroundSize = '100% 100%';
@@ -414,6 +469,7 @@
                 }
             });
             
+            // Event listeners for text control sliders and dropdowns
             fontControl.addEventListener('change', (e) => { if(activeElement) { activeElement.font = e.target.value; renderText(activeElement); }});
             sizeControl.addEventListener('input', (e) => { if(activeElement) { activeElement.size = e.target.value; renderText(activeElement); }});
             corruptionControl.addEventListener('input', (e) => { if(activeElement) { activeElement.corruption = e.target.value; renderText(activeElement); }});
@@ -424,6 +480,7 @@
             addTextButton.addEventListener('click', () => createElement('text'));
             addImageButton.addEventListener('click', () => imageInput.click());
             
+            // Handles image file selection
             imageInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
                     const reader = new FileReader();
@@ -454,7 +511,7 @@
                 const saveData = {
                     template: frameSelector.value,
                     elements: elements.map(el => {
-                        const { el: domEl, ...data } = el;
+                        const { el: domEl, ...data } = el; // Exclude the DOM element itself
                         return data;
                     })
                 };
@@ -475,8 +532,10 @@
                 const reader = new FileReader();
                 reader.onload = (re) => {
                     const saveData = JSON.parse(re.target.result);
+                    // Clear current canvas
                     elements = [];
                     contentLayer.innerHTML = '';
+                    // Load new data
                     frameSelector.value = saveData.template;
                     frameSelector.dispatchEvent(new Event('change'));
                     saveData.elements.forEach(elData => {
