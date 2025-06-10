@@ -45,62 +45,86 @@
 <body class="bg-gray-200 min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-4xl bg-gray-100 rounded-lg shadow-2xl p-6">
         <h1 class="text-4xl text-center text-gray-700 mb-2" style="font-family: 'Special Elite', cursive;">Historical Text Generator</h1>
-        <p class="text-center text-gray-500 mb-6">Type your text, choose a font, add images, and export to PDF.</p>
+        <p class="text-center text-gray-500 mb-6">Create authentic-looking historical documents with separate header and body controls.</p>
 
-        <div class="bg-white p-4 rounded-md shadow-inner">
-            <textarea id="inputText" class="w-full h-48 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" placeholder="Paste your pre-formatted text here..."></textarea>
+        <!-- Input Section -->
+        <div class="space-y-4">
+             <div class="bg-white p-4 rounded-md shadow-inner">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Header (Pre-Printed Template)</label>
+                <textarea id="headerText" class="w-full h-24 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"></textarea>
+            </div>
+             <div class="bg-white p-4 rounded-md shadow-inner">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Body (Typed Content)</label>
+                <textarea id="bodyText" class="w-full h-48 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"></textarea>
+            </div>
         </div>
         
         <!-- Controls Section -->
-        <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-4">
-            <!-- Font and Irregularity Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
-                 <div>
-                    <label for="fontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
-                    <select id="fontSelector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
-                        <option value="font-bogart">Classic Serif (Prop)</option>
-                        <option value="font-libre-baskerville">Baskerville (Prop)</option>
-                        <option value="font-oranienbaum">Oranienbaum (Prop)</option>
-                        <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
-                        <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
-                        <option value="font-anonymous-pro">Programmer (Mono)</option>
-                        <option value="font-cousine">Courier (Mono)</option>
-                        <option value="font-vt323">Dot-Matrix (Mono)</option>
-                        <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="textSizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
-                    <input id="textSizeSlider" type="range" min="10" max="28" value="16" class="mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                </div>
-                <div>
-                    <label for="irregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity Level</label>
-                    <input id="irregularitySlider" type="range" min="0" max="10" value="5" class="mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                </div>
-            </div>
-            <!-- Logo Controls -->
-            <div id="logo-controls" class="hidden space-y-2 pt-4 border-t">
-                <h3 class="font-bold text-gray-600">Logo Controls</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div><label for="logoSize" class="block text-sm font-medium text-gray-700">Size</label><input id="logoSize" type="range" min="30" max="400" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
-                     <div><label for="logoX" class="block text-sm font-medium text-gray-700">X Position</label><input id="logoX" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
-                     <div><label for="logoY" class="block text-sm font-medium text-gray-700">Y Position</label><input id="logoY" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+        <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
+            <!-- Header Controls -->
+            <div class="space-y-4">
+                <h3 class="font-bold text-gray-800 text-lg">Header Controls</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                     <div>
+                        <label for="headerFontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
+                        <select id="headerFontSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="font-bogart" selected>Classic Serif (Prop)</option>
+                            <option value="font-special-elite">Classic Typewriter (Prop)</option>
+                            <option value="font-libre-baskerville">Baskerville (Prop)</option>
+                            <option value="font-oranienbaum">Oranienbaum (Prop)</option>
+                            <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
+                            <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
+                            <option value="font-anonymous-pro">Programmer (Mono)</option>
+                            <option value="font-cousine">Courier (Mono)</option>
+                            <option value="font-vt323">Dot-Matrix (Mono)</option>
+                            <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="headerSizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
+                        <input id="headerSizeSlider" type="range" min="10" max="32" value="18" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="headerIrregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity</label>
+                        <input id="headerIrregularitySlider" type="range" min="0" max="10" value="3" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
                 </div>
             </div>
-            <!-- Signature Controls -->
-             <div id="signature-controls" class="hidden space-y-2 pt-4 border-t">
-                <h3 class="font-bold text-gray-600">Signature Controls</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div><label for="signatureSize" class="block text-sm font-medium text-gray-700">Size</label><input id="signatureSize" type="range" min="50" max="500" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
-                     <div><label for="signatureX" class="block text-sm font-medium text-gray-700">X Position</label><input id="signatureX" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
-                     <div><label for="signatureY" class="block text-sm font-medium text-gray-700">Y Position</label><input id="signatureY" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+            <!-- Body Controls -->
+            <div class="space-y-4 pt-4 border-t">
+                 <h3 class="font-bold text-gray-800 text-lg">Body Controls</h3>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                    <div>
+                        <label for="bodyFontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
+                        <select id="bodyFontSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                             <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
+                             <option value="font-bogart">Classic Serif (Prop)</option>
+                             <option value="font-libre-baskerville">Baskerville (Prop)</option>
+                             <option value="font-oranienbaum">Oranienbaum (Prop)</option>
+                             <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
+                             <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
+                             <option value="font-anonymous-pro">Programmer (Mono)</option>
+                             <option value="font-cousine">Courier (Mono)</option>
+                             <option value="font-vt323">Dot-Matrix (Mono)</option>
+                             <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="bodySizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
+                        <input id="bodySizeSlider" type="range" min="10" max="28" value="16" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label for="bodyIrregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity</label>
+                        <input id="bodyIrregularitySlider" type="range" min="0" max="10" value="6" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
                 </div>
             </div>
+            <!-- Image Controls -->
+            <div id="logo-controls" class="hidden space-y-2 pt-4 border-t"><h3 class="font-bold text-gray-600">Logo Controls</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label for="logoSize" class="block text-sm font-medium text-gray-700">Size</label><input id="logoSize" type="range" min="30" max="400" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="logoX" class="block text-sm font-medium text-gray-700">X</label><input id="logoX" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="logoY" class="block text-sm font-medium text-gray-700">Y</label><input id="logoY" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div></div></div>
+            <div id="signature-controls" class="hidden space-y-2 pt-4 border-t"><h3 class="font-bold text-gray-600">Signature Controls</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label for="signatureSize" class="block text-sm font-medium text-gray-700">Size</label><input id="signatureSize" type="range" min="50" max="500" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="signatureX" class="block text-sm font-medium text-gray-700">X</label><input id="signatureX" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="signatureY" class="block text-sm font-medium text-gray-700">Y</label><input id="signatureY" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div></div></div>
         </div>
 
         <div class="flex flex-wrap justify-center items-center my-4 gap-4">
-            <button id="instantButton" class="px-6 py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 active:bg-green-800 transition-transform transform active:scale-95 shadow-lg">Generate Text</button>
             <button id="logoButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Logo</button>
             <input type="file" id="logoInput" class="hidden" accept="image/*">
             <button id="signatureButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Signature</button>
@@ -114,23 +138,37 @@
         <div id="outputContainer" class="relative mt-6 bg-white p-8 rounded-lg shadow-inner overflow-hidden">
             <div id="logo-container" class="image-container"><img id="logo-preview" src="" alt="Logo Preview" class="image-preview hidden"/></div>
             <div id="signature-container" class="image-container"><img id="signature-preview" src="" alt="Signature Preview" class="image-preview hidden"/></div>
-            <div class="relative w-full"><div id="output" class="min-h-[200px] w-full output-text"></div></div>
+            <div class="relative w-full">
+                <div id="headerOutput" class="output-text"></div>
+                <div id="bodyOutput" class="output-text"></div>
+            </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM Elements ---
-            const inputText = document.getElementById('inputText');
-            const instantButton = document.getElementById('instantButton');
+            const headerText = document.getElementById('headerText');
+            const bodyText = document.getElementById('bodyText');
             const exportPdfButton = document.getElementById('exportPdfButton');
-            const fontSelector = document.getElementById('fontSelector');
-            const irregularitySlider = document.getElementById('irregularitySlider');
-            const textSizeSlider = document.getElementById('textSizeSlider');
-            const outputDiv = document.getElementById('output');
             const outputContainer = document.getElementById('outputContainer');
+            const headerOutput = document.getElementById('headerOutput');
+            const bodyOutput = document.getElementById('bodyOutput');
+            
+            // --- Controls ---
+            const allControls = document.querySelectorAll('.control-item, #headerText, #bodyText');
 
-            // Logo Elements
+            // Header Controls
+            const headerFontSelector = document.getElementById('headerFontSelector');
+            const headerSizeSlider = document.getElementById('headerSizeSlider');
+            const headerIrregularitySlider = document.getElementById('headerIrregularitySlider');
+
+            // Body Controls
+            const bodyFontSelector = document.getElementById('bodyFontSelector');
+            const bodySizeSlider = document.getElementById('bodySizeSlider');
+            const bodyIrregularitySlider = document.getElementById('bodyIrregularitySlider');
+
+            // Image Elements & Controls
             const logoButton = document.getElementById('logoButton');
             const logoInput = document.getElementById('logoInput');
             const logoPreview = document.getElementById('logo-preview');
@@ -140,7 +178,6 @@
             const logoXSlider = document.getElementById('logoX');
             const logoYSlider = document.getElementById('logoY');
 
-            // Signature Elements
             const signatureButton = document.getElementById('signatureButton');
             const signatureInput = document.getElementById('signatureInput');
             const signaturePreview = document.getElementById('signature-preview');
@@ -152,7 +189,6 @@
 
             // --- PDF Export ---
             const { jsPDF } = window.jspdf;
-            
             const exportToPDF = () => {
                 html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
@@ -162,7 +198,7 @@
                 }).catch(err => console.error("Error exporting to PDF:", err));
             };
             
-            // --- Generic Image Handling ---
+            // --- Image Handling ---
             const setupImageInput = (button, input, preview, controls) => {
                 button.addEventListener('click', () => input.click());
                 input.addEventListener('change', (event) => {
@@ -182,7 +218,6 @@
             setupImageInput(logoButton, logoInput, logoPreview, logoControls);
             setupImageInput(signatureButton, signatureInput, signaturePreview, signatureControls);
 
-            // --- Image Control Handlers ---
             const setupImageControls = (container, preview, sizeSlider, xSlider, ySlider) => {
                 const updatePosition = () => {
                     container.style.left = `${xSlider.value}%`;
@@ -199,41 +234,15 @@
             setupImageControls(signatureContainer, signaturePreview, signatureSizeSlider, signatureXSlider, signatureYSlider);
 
             // --- Text Generation ---
-            function createStyledChar(char, baseStyle) {
-                const irregularityFactor = irregularitySlider.value / 10.0;
-                const span = document.createElement('span');
-                span.className = 'styled-char';
-                span.innerHTML = (char === ' ') ? '&nbsp;' : char;
+            function renderText(targetDiv, text, fontClass, fontSize, irregularity) {
+                const irregularityFactor = irregularity / 10.0;
+                targetDiv.innerHTML = '';
+                targetDiv.className = `w-full output-text ${fontClass}`;
+                targetDiv.style.fontSize = `${fontSize}px`;
                 
-                const xOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
-                const yOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
-                const rotation = (Math.random() - 0.5) * 2.0 * irregularityFactor;
-                let opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
-
-                if (baseStyle.isBold) {
-                    opacity = Math.max(0.2, opacity - 0.1); // Bolder text is darker
-                    span.style.textShadow = `${0.5 * irregularityFactor}px 0 0 currentColor`;
-                }
-                if (baseStyle.isItalic) {
-                    span.style.fontStyle = 'italic';
-                }
-
-                span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
-                span.style.opacity = opacity;
-
-                return span;
-            }
-
-            const instantPrint = () => {
-                let textToPrint = inputText.value.replace(/\u00A0/g, ' ');
-                outputDiv.innerHTML = '';
-                outputDiv.className = `min-h-[200px] w-full output-text ${fontSelector.value}`;
-                outputDiv.style.fontSize = `${textSizeSlider.value}px`;
-
-                // Regex to find normal text, bold, or italics
                 const regex = /(\*.*?\*)|(\/.*?\/)|([^*\/]+)/g;
 
-                const lines = textToPrint.split('\n');
+                const lines = text.replace(/\u00A0/g, ' ').split('\n');
                 lines.forEach(line => {
                     const lineDiv = document.createElement('div');
                     const fragments = line.match(regex) || [];
@@ -251,31 +260,54 @@
                         }
                         
                         for (const char of cleanFragment) {
-                            lineDiv.appendChild(createStyledChar(char, style));
+                            const span = document.createElement('span');
+                            span.className = 'styled-char';
+                            span.innerHTML = (char === ' ') ? '&nbsp;' : char;
+                            
+                            const xOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
+                            const yOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
+                            const rotation = (Math.random() - 0.5) * 2.0 * irregularityFactor;
+                            let opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
+
+                            if (style.isBold) {
+                                opacity = Math.max(0.2, opacity - 0.1);
+                                span.style.textShadow = `${0.5 * irregularityFactor}px 0 0 currentColor`;
+                            }
+                            if (style.isItalic) {
+                                span.style.fontStyle = 'italic';
+                            }
+
+                            span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
+                            span.style.opacity = opacity;
+                            lineDiv.appendChild(span);
                         }
                     });
 
                     if (line.trim() === '') { lineDiv.innerHTML = '&nbsp;'; }
-                    outputDiv.appendChild(lineDiv);
+                    targetDiv.appendChild(lineDiv);
                 });
             }
             
+            const fullRender = () => {
+                renderText(headerOutput, headerText.value, headerFontSelector.value, headerSizeSlider.value, headerIrregularitySlider.value);
+                renderText(bodyOutput, bodyText.value, bodyFontSelector.value, bodySizeSlider.value, bodyIrregularitySlider.value);
+            };
+
             // --- Event Listeners ---
-            instantButton.addEventListener('click', instantPrint);
             exportPdfButton.addEventListener('click', exportToPDF);
-            fontSelector.addEventListener('change', instantPrint);
-            irregularitySlider.addEventListener('input', instantPrint);
-            textSizeSlider.addEventListener('input', instantPrint);
-            inputText.addEventListener('input', instantPrint);
+            allControls.forEach(control => {
+                control.addEventListener('input', fullRender);
+                control.addEventListener('change', fullRender); // For select dropdowns
+            });
 
             // --- Initial State ---
-            inputText.value = `      VECTOR GRAPHICS & REPAIR
+            headerText.value = `      *VECTOR GRAPHICS & REPAIR*
       ==========================
       1337 Terminal Green
       Silicon Prairie, KS 66210
-      (913) 555-0184
-
---------------------------------------------------
+      (913) 555-0184`;
+      
+            bodyText.value = `--------------------------------------------------
 *CUSTOMER INVOICE*
 --------------------------------------------------
 Invoice #: 85-0012                  Date: 10/26/1985
@@ -305,7 +337,7 @@ PAYMENT: Cash on delivery. 30-day warranty on all
 
          -- Vector Graphics Staff`;
             
-            instantPrint();
+            fullRender();
         });
     </script>
 </body>
