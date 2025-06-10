@@ -77,10 +77,11 @@
                      <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
                      <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
                  </div>
-                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                      <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
                      <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
                      <div><label class="block text-sm">Ink Saturation</label><input type="range" id="ink-control" class="w-full" min="0" max="10" value="4"></div>
+                     <div><label class="block text-sm">Blot</label><input type="range" id="blot-control" class="w-full" min="0" max="10" value="0"></div>
                  </div>
             </div>
         </div>
@@ -104,6 +105,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Element references
             const outputContainer = document.getElementById('outputContainer');
             const contentLayer = document.getElementById('contentLayer');
             const controlsContainer = document.getElementById('text-controls');
@@ -116,13 +118,16 @@
             const loadInput = document.getElementById('loadInput');
             const exportPdfButton = document.getElementById('exportPdfButton');
 
+            // Control references
             const fontControl = document.getElementById('font-control');
             const sizeControl = document.getElementById('size-control');
             const corruptionControl = document.getElementById('corruption-control');
             const jitterControl = document.getElementById('jitter-control');
             const rotationControl = document.getElementById('rotation-control');
             const inkControl = document.getElementById('ink-control');
+            const blotControl = document.getElementById('blot-control');
 
+            // State variables
             let elements = [];
             let activeElement = null;
             let action = { type: null, startX: 0, startY: 0, startW: 0, startH: 0, startRot: 0 };
@@ -142,40 +147,24 @@
             // Function to export the current view to a PDF file
             function exportToPDF() {
                 deselectAll();
-
-                // Temporarily modify styles for accurate capture
                 const textBlocks = document.querySelectorAll('.output-text');
-                textBlocks.forEach(block => {
-                    block.style.overflow = 'visible'; // Allow content to overflow for capture
-                });
+                textBlocks.forEach(block => { block.style.overflow = 'visible'; });
 
-                const options = {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    useCORS: true
-                };
-
-                html2canvas(outputContainer, options).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                    pdf.save("historical-document.pdf");
-
-                    // Restore original styles
-                    textBlocks.forEach(block => {
-                        block.style.overflow = 'hidden';
+                html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+                    .then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                        pdf.save("historical-document.pdf");
+                        textBlocks.forEach(block => { block.style.overflow = 'hidden'; });
+                    }).catch(err => {
+                        console.error("Error exporting to PDF:", err);
+                        textBlocks.forEach(block => { block.style.overflow = 'hidden'; });
                     });
-                }).catch(err => {
-                    console.error("Error exporting to PDF:", err);
-                    // Ensure styles are restored even if there's an error
-                    textBlocks.forEach(block => {
-                        block.style.overflow = 'hidden';
-                    });
-                });
             }
 
             // Creates a single styled character with various effects
-            function createStyledChar(char, jitter, rotation, ink, corruption) {
+            function createStyledChar(char, jitter, rotation, ink, corruption, blot) {
                 const span = document.createElement('span');
                 span.className = 'styled-char';
                 let charToRender = char;
@@ -192,40 +181,32 @@
                 const yOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const rot = (Math.random() - 0.5) * 2.0 * rotationFactor;
                 
-                // --- New, more believable Ink Saturation Logic ---
-                // This logic simulates a typewriter ribbon.
-                // High saturation = dark, consistent ink with occasional blots.
-                // Low saturation = faint, inconsistent ink like a used ribbon.
-                const inkValue = parseInt(ink, 10); // Slider value from 0-10.
+                // --- Ink Saturation & Blot Logic (Now Separated) ---
+                const inkValue = parseInt(ink, 10);
+                const blotValue = parseInt(blot, 10);
 
-                // 1. Determine base opacity and randomness based on ink level.
-                // A high ink value should mean high opacity and low randomness.
-                const baseOpacity = 0.4 + (inkValue / 10.0) * 0.6; // Ranges from 0.4 (faint) to 1.0 (dark)
-                const opacityVariation = (1.0 - (inkValue / 10.0)) * 0.5; // Variation is high when ink is low. Ranges from 0.5 down to 0.0.
-
-                // 2. Calculate the final opacity for the character with random variation.
+                // 1. Ink Saturation controls base opacity and faintness.
+                const baseOpacity = 0.4 + (inkValue / 10.0) * 0.6;
+                const opacityVariation = (1.0 - (inkValue / 10.0)) * 0.5;
                 const randomFlicker = (Math.random() - 0.5) * opacityVariation;
                 let finalOpacity = baseOpacity + randomFlicker;
 
-                // 3. Handle blotting (heavy ink spots), more likely with high saturation (a fresh ribbon).
-                const blotChance = (inkValue / 10.0) * 0.08; // Max 8% chance for a blotch at highest saturation.
+                const faintChance = (1.0 - (inkValue / 10.0)) * 0.1;
+                if (Math.random() < faintChance) {
+                    finalOpacity *= 0.6;
+                }
+
+                // 2. Blot controls chance and intensity of ink blots.
+                const blotChance = (blotValue / 10.0) * 0.1; // Max 10% chance
                 if (Math.random() < blotChance) {
                     span.style.fontWeight = 'bold';
-                    const blurAmount = (Math.random() * (inkValue / 10.0) * 0.7) + 0.2; // Blur is stronger with more ink.
+                    const blurAmount = (Math.random() * (blotValue / 10.0) * 0.7) + 0.2;
                     const blotOpacity = 0.5 + (Math.random() * 0.5);
                     span.style.textShadow = `0 0 ${blurAmount.toFixed(2)}px rgba(0,0,0,${blotOpacity.toFixed(2)})`;
-                    finalOpacity = Math.min(1.0, finalOpacity + 0.2); // Blot makes the character darker.
+                    finalOpacity = Math.min(1.0, finalOpacity + 0.2);
                 }
 
-                // 4. Handle very faint characters, more likely with low saturation (a dry ribbon).
-                const faintChance = (1.0 - (inkValue / 10.0)) * 0.1; // Max 10% chance for a very faint char at lowest saturation.
-                if (Math.random() < faintChance) {
-                    finalOpacity *= 0.6; // Make it significantly fainter.
-                }
-
-                // Apply transform and the final calculated opacity.
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rot}deg)`;
-                // Ensure opacity stays within a reasonable, visible range [0.1, 1.0].
                 span.style.opacity = Math.max(0.1, Math.min(1, finalOpacity));
 
                 return span;
@@ -233,7 +214,7 @@
 
             // Renders the full text of an element with all applied styles
             function renderText(elData) {
-                const { el, text, font, size, jitter, rotation, ink, corruption } = elData;
+                const { el, text, font, size, jitter, rotation, ink, corruption, blot } = elData;
                 const contentDiv = el.querySelector('.output-text');
                 contentDiv.innerHTML = '';
                 contentDiv.className = `output-text ${font}`;
@@ -242,7 +223,7 @@
                 lines.forEach(line => {
                     const lineDiv = document.createElement('div');
                     for (const char of line) {
-                        lineDiv.appendChild(createStyledChar(char, jitter, rotation, ink, corruption));
+                        lineDiv.appendChild(createStyledChar(char, jitter, rotation, ink, corruption, blot));
                     }
                     if (line.trim() === '') lineDiv.innerHTML = '&nbsp;';
                     contentDiv.appendChild(lineDiv);
@@ -272,7 +253,7 @@
                     elData = initialData ? { ...initialData, el: wrapper } : {
                         id, el: wrapper, type: 'text', text: 'New Text Block', 
                         font: 'font-special-elite', size: 16, 
-                        jitter: 5, rotation: 2, ink: 4, corruption: 0,
+                        jitter: 5, rotation: 2, ink: 4, corruption: 0, blot: 0,
                         x: 100, y: 100, width: 300, rotation: 0
                     };
                     renderText(elData);
@@ -305,35 +286,27 @@
                 }
                 
                 controlsContainer.style.display = 'block';
-                const { font, size, corruption, jitter, rotation, ink } = activeElement;
+                const { font, size, corruption, jitter, rotation, ink, blot } = activeElement;
                 fontControl.innerHTML = getFontOptions(font);
                 sizeControl.value = size;
                 corruptionControl.value = corruption;
                 jitterControl.value = jitter;
                 rotationControl.value = rotation;
                 inkControl.value = ink;
+                blotControl.value = blot;
             }
 
             // Generates the HTML for the font selector dropdown
             function getFontOptions(selectedFont) {
                 const fonts = { 
-                    'font-special-elite': 'Classic Typewriter', 
-                    'font-cutive-mono': 'Clean Mono', 
-                    'font-bogart': 'Classic Serif', 
-                    'font-vt323': 'Dot-Matrix',
-                    'font-anonymous-pro': 'Anonymous Pro',
-                    'font-cousine': 'Courier New',
-                    'font-ibm-plex-mono': 'IBM Plex Mono',
-                    'font-libre-baskerville': 'Baskerville',
-                    'font-oranienbaum': 'Oranienbaum',
-                    'font-tinos': 'Tinos',
-                    'font-unifrakturmaguntia': 'Blackletter',
-                    'font-vollkorn': 'Vollkorn'
+                    'font-special-elite': 'Classic Typewriter', 'font-cutive-mono': 'Clean Mono', 'font-bogart': 'Classic Serif', 'font-vt323': 'Dot-Matrix',
+                    'font-anonymous-pro': 'Anonymous Pro', 'font-cousine': 'Courier New', 'font-ibm-plex-mono': 'IBM Plex Mono', 'font-libre-baskerville': 'Baskerville',
+                    'font-oranienbaum': 'Oranienbaum', 'font-tinos': 'Tinos', 'font-unifrakturmaguntia': 'Blackletter', 'font-vollkorn': 'Vollkorn'
                 };
                 return Object.entries(fonts).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
             }
             
-            // Selects an element, showing its controls and selection border
+            // Selection and deselect functions
             function selectElement(elData) {
                 if (activeElement === elData) return;
                 deselectAll();
@@ -342,7 +315,6 @@
                 updateControls();
             }
 
-            // Deselects any active element
             function deselectAll() {
                 if (activeElement) {
                     activeElement.el.classList.remove('selected');
@@ -351,7 +323,9 @@
                 updateControls();
             }
 
-            // Main event listener for mousedown to handle selection and actions
+            // --- Event Listeners ---
+
+            // Mouse down for selecting, dragging, resizing, rotating
             document.addEventListener('mousedown', (e) => {
                 const wrapper = e.target.closest('.draggable-wrapper');
                 if (!wrapper) { if (!e.target.closest('#text-controls')) deselectAll(); return; }
@@ -361,7 +335,6 @@
                 
                 selectElement(elData);
 
-                // Double-click to edit text
                 if (e.detail === 2 && activeElement.type === 'text') {
                     const textDiv = activeElement.el.querySelector('.output-text');
                     textDiv.contentEditable = 'true';
@@ -371,18 +344,16 @@
                     window.getSelection().removeAllRanges();
                     window.getSelection().addRange(range);
                     
-                    const elementBeingEdited = activeElement;
                     textDiv.addEventListener('blur', () => {
                         textDiv.contentEditable = 'false';
-                        if (elementBeingEdited) {
-                            elementBeingEdited.text = textDiv.innerText;
-                            renderText(elementBeingEdited);
+                        if (activeElement) {
+                            activeElement.text = textDiv.innerText;
+                            renderText(activeElement);
                         }
                     }, { once: true });
                     return;
                 }
                 
-                // Initialize action (drag, resize, rotate)
                 action.startX = e.clientX;
                 action.startY = e.clientY;
                 action.elData = elData;
@@ -405,7 +376,7 @@
                 }
             });
 
-            // Handles mouse movement for drag, resize, and rotate
+            // Mouse move for active actions
             document.addEventListener('mousemove', (e) => {
                 if (!action.type || !action.elData) return;
                 e.preventDefault();
@@ -437,13 +408,10 @@
                 }
             });
 
-            // Ends any active action on mouse up
-            document.addEventListener('mouseup', () => { 
-                action.type = null; 
-                action.elData = null; 
-            });
+            // Mouse up to end actions
+            document.addEventListener('mouseup', () => { action.type = null; action.elData = null; });
             
-            // Handles delete key to remove the selected element
+            // Keydown for deleting elements
             document.addEventListener('keydown', (e) => {
                  if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
                      const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
@@ -456,7 +424,7 @@
                  }
             });
 
-            // Event listener for changing the background template
+            // Listeners for controls and buttons
             frameSelector.addEventListener('change', () => {
                 const template = templates[frameSelector.value];
                 outputContainer.style.backgroundImage = template !== 'none' ? template : '';
@@ -469,35 +437,33 @@
                 }
             });
             
-            // Event listeners for text control sliders and dropdowns
-            fontControl.addEventListener('change', (e) => { if(activeElement) { activeElement.font = e.target.value; renderText(activeElement); }});
-            sizeControl.addEventListener('input', (e) => { if(activeElement) { activeElement.size = e.target.value; renderText(activeElement); }});
-            corruptionControl.addEventListener('input', (e) => { if(activeElement) { activeElement.corruption = e.target.value; renderText(activeElement); }});
-            jitterControl.addEventListener('input', (e) => { if(activeElement) { activeElement.jitter = e.target.value; renderText(activeElement); }});
-            rotationControl.addEventListener('input', (e) => { if(activeElement) { activeElement.rotation = e.target.value; renderText(activeElement); }});
-            inkControl.addEventListener('input', (e) => { if(activeElement) { activeElement.ink = e.target.value; renderText(activeElement); }});
+            function handleControlChange(control, property) {
+                if (activeElement) {
+                    activeElement[property] = control.value;
+                    renderText(activeElement);
+                }
+            }
+
+            fontControl.addEventListener('change', () => handleControlChange(fontControl, 'font'));
+            sizeControl.addEventListener('input', () => handleControlChange(sizeControl, 'size'));
+            corruptionControl.addEventListener('input', () => handleControlChange(corruptionControl, 'corruption'));
+            jitterControl.addEventListener('input', () => handleControlChange(jitterControl, 'jitter'));
+            rotationControl.addEventListener('input', () => handleControlChange(rotationControl, 'rotation'));
+            inkControl.addEventListener('input', () => handleControlChange(inkControl, 'ink'));
+            blotControl.addEventListener('input', () => handleControlChange(blotControl, 'blot'));
             
             addTextButton.addEventListener('click', () => createElement('text'));
             addImageButton.addEventListener('click', () => imageInput.click());
             
-            // Handles image file selection
             imageInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
                     const reader = new FileReader();
                     reader.onload = (re) => {
                         const imgSrc = re.target.result;
                         const tempImg = new Image();
-                        tempImg.onload = () => { // Use onload to get natural dimensions
+                        tempImg.onload = () => {
                             const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
-                            const initialWidth = 150;
-                            createElement('image', {
-                                src: imgSrc,
-                                x: 50, y: 50,
-                                width: initialWidth,
-                                height: initialWidth / aspectRatio,
-                                rotation: 0,
-                                aspectRatio: aspectRatio
-                            });
+                            createElement('image', { src: imgSrc, x: 50, y: 50, width: 150, height: 150 / aspectRatio, rotation: 0, aspectRatio: aspectRatio });
                         };
                         tempImg.src = imgSrc;
                     };
@@ -506,23 +472,20 @@
             });
             exportPdfButton.addEventListener('click', exportToPDF);
             
-             // --- Save/Load Logic ---
             saveButton.addEventListener('click', () => {
                 const saveData = {
                     template: frameSelector.value,
                     elements: elements.map(el => {
-                        const { el: domEl, ...data } = el; // Exclude the DOM element itself
+                        const { el: domEl, ...data } = el;
                         return data;
                     })
                 };
                 const dataStr = JSON.stringify(saveData, null, 2);
-                const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                const url = URL.createObjectURL(dataBlob);
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = URL.createObjectURL(new Blob([dataStr], {type: 'application/json'}));
                 a.download = 'historical-document.json';
                 a.click();
-                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(a.href);
             });
 
             loadButton.addEventListener('click', () => loadInput.click());
@@ -532,10 +495,8 @@
                 const reader = new FileReader();
                 reader.onload = (re) => {
                     const saveData = JSON.parse(re.target.result);
-                    // Clear current canvas
                     elements = [];
                     contentLayer.innerHTML = '';
-                    // Load new data
                     frameSelector.value = saveData.template;
                     frameSelector.dispatchEvent(new Event('change'));
                     saveData.elements.forEach(elData => {
