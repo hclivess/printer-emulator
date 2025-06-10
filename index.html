@@ -17,7 +17,6 @@
         .output-text { color: #2d3748; white-space: pre-wrap; }
 
         /* --- Font Normalization --- */
-        /* Specific adjustments for each font to ensure layout consistency. */
         .font-vt323 { font-family: 'VT323', monospace; font-size: 20px; letter-spacing: 2px; line-height: 24px; }
         .font-special-elite { font-family: 'Special Elite', cursive; font-size: 16px; letter-spacing: 1.5px; line-height: 26px; }
         .font-cutive-mono { font-family: 'Cutive Mono', monospace; font-size: 17px; letter-spacing: 1px; line-height: 25px; }
@@ -54,25 +53,31 @@
         
         <!-- Controls Section -->
         <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-4">
-            <!-- Font Controls -->
-            <div>
-                <label for="fontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
-                <select id="fontSelector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                    <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
-                    <option value="font-bogart">Classic Serif (Prop)</option>
-                    <option value="font-libre-baskerville">Baskerville (Prop)</option>
-                    <option value="font-oranienbaum">Oranienbaum (Prop)</option>
-                    <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
-                    <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
-                    <option value="font-anonymous-pro">Programmer (Mono)</option>
-                    <option value="font-cousine">Courier (Mono)</option>
-                    <option value="font-vt323">Dot-Matrix (Mono)</option>
-                    <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
-                </select>
+            <!-- Font and Irregularity Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div>
+                    <label for="fontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
+                    <select id="fontSelector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
+                        <option value="font-bogart">Classic Serif (Prop)</option>
+                        <option value="font-libre-baskerville">Baskerville (Prop)</option>
+                        <option value="font-oranienbaum">Oranienbaum (Prop)</option>
+                        <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
+                        <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
+                        <option value="font-anonymous-pro">Programmer (Mono)</option>
+                        <option value="font-cousine">Courier (Mono)</option>
+                        <option value="font-vt323">Dot-Matrix (Mono)</option>
+                        <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="irregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity Level</label>
+                    <input id="irregularitySlider" type="range" min="0" max="10" value="5" class="mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                </div>
             </div>
             <!-- Logo Controls -->
-            <div id="logo-controls" class="hidden space-y-2">
-                <hr><h3 class="font-bold text-gray-600">Logo Controls</h3>
+            <div id="logo-controls" class="hidden space-y-2 pt-4 border-t">
+                <h3 class="font-bold text-gray-600">Logo Controls</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <div><label for="logoSize" class="block text-sm font-medium text-gray-700">Size</label><input id="logoSize" type="range" min="30" max="400" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
                      <div><label for="logoX" class="block text-sm font-medium text-gray-700">X Position</label><input id="logoX" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
@@ -80,8 +85,8 @@
                 </div>
             </div>
             <!-- Signature Controls -->
-             <div id="signature-controls" class="hidden space-y-2">
-                <hr><h3 class="font-bold text-gray-600">Signature Controls</h3>
+             <div id="signature-controls" class="hidden space-y-2 pt-4 border-t">
+                <h3 class="font-bold text-gray-600">Signature Controls</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <div><label for="signatureSize" class="block text-sm font-medium text-gray-700">Size</label><input id="signatureSize" type="range" min="50" max="500" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
                      <div><label for="signatureX" class="block text-sm font-medium text-gray-700">X Position</label><input id="signatureX" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
@@ -116,6 +121,7 @@
             const instantButton = document.getElementById('instantButton');
             const exportPdfButton = document.getElementById('exportPdfButton');
             const fontSelector = document.getElementById('fontSelector');
+            const irregularitySlider = document.getElementById('irregularitySlider');
             const outputDiv = document.getElementById('output');
             const outputContainer = document.getElementById('outputContainer');
 
@@ -146,7 +152,6 @@
                 html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-                    // Use canvas dimensions for a frameless PDF
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
                     pdf.save("historical-output.pdf");
                 }).catch(err => console.error("Error exporting to PDF:", err));
@@ -182,7 +187,7 @@
                 sizeSlider.addEventListener('input', (e) => { preview.style.width = `${e.target.value}px`; });
                 xSlider.addEventListener('input', updatePosition);
                 ySlider.addEventListener('input', updatePosition);
-                updatePosition(); // Set initial position
+                updatePosition();
             };
 
             setupImageControls(logoContainer, logoPreview, logoSizeSlider, logoXSlider, logoYSlider);
@@ -190,23 +195,28 @@
 
             // --- Text Generation ---
             function createStyledChar(char) {
+                const irregularityFactor = irregularitySlider.value / 10.0; // Scale of 0.0 to 1.0
                 const span = document.createElement('span');
                 span.className = 'styled-char';
                 span.innerHTML = (char === ' ') ? '&nbsp;' : char;
-                const xOffset = (Math.random() - 0.5) * 0.7;
-                const yOffset = (Math.random() - 0.5) * 1.2;
-                const rotation = (Math.random() - 0.5) * 1.5;
-                const opacity = 0.85 + Math.random() * 0.15;
+                
+                // Apply randomness based on the slider value
+                const xOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
+                const yOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
+                const rotation = (Math.random() - 0.5) * 2.0 * irregularityFactor;
+                const opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
+
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
                 span.style.opacity = opacity;
-                if (Math.random() > 0.7) { span.style.textShadow = '0.5px 0.5px 0.5px rgba(45, 55, 72, 0.1)';}
+
+                if (Math.random() < (0.5 * irregularityFactor)) { 
+                    span.style.textShadow = '0.5px 0.5px 0.5px rgba(45, 55, 72, 0.1)';
+                }
                 return span;
             }
 
             const instantPrint = () => {
-                let textToPrint = inputText.value;
-                textToPrint = textToPrint.replace(/\u00A0/g, ' ');
-
+                let textToPrint = inputText.value.replace(/\u00A0/g, ' ');
                 outputDiv.innerHTML = '';
                 outputDiv.className = `min-h-[200px] w-full output-text ${fontSelector.value}`;
                 const lines = textToPrint.split('\n');
@@ -222,6 +232,7 @@
             instantButton.addEventListener('click', instantPrint);
             exportPdfButton.addEventListener('click', exportToPDF);
             fontSelector.addEventListener('change', instantPrint);
+            irregularitySlider.addEventListener('input', instantPrint);
             inputText.addEventListener('input', instantPrint);
 
             // --- Initial State ---
