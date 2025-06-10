@@ -59,15 +59,23 @@
         <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
             <div>
                 <h3 class="font-bold text-gray-800 text-lg">Document Style</h3>
-                <label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label>
-                <select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
-                    <option value="none" selected>None (Blank)</option>
-                    <option value="ovation">Ovation Invoice</option>
-                    <option value="hotel">Hotel Bill</option>
-                    <option value="boat">Boat Invoice</option>
-                    <option value="lined">Lined Paper</option>
-                    <option value="columns">Vertical Columns</option>
-                </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div>
+                        <label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label>
+                        <select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                            <option value="none" selected>None (Blank)</option>
+                            <option value="ovation">Ovation Invoice</option>
+                            <option value="hotel">Hotel Bill</option>
+                            <option value="boat">Boat Invoice</option>
+                            <option value="lined">Lined Paper</option>
+                            <option value="columns">Vertical Columns</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button id="addTemplateButton" class="w-full px-4 py-2 bg-gray-600 text-white font-semibold rounded-md hover:bg-gray-700">Upload Template</button>
+                        <input type="file" id="templateInput" class="hidden" accept="image/*">
+                    </div>
+                </div>
             </div>
             <div id="text-controls" class="hidden border-t pt-4">
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -115,6 +123,8 @@
             const loadButton = document.getElementById('loadButton');
             const loadInput = document.getElementById('loadInput');
             const exportImageButton = document.getElementById('exportImageButton');
+            const addTemplateButton = document.getElementById('addTemplateButton');
+            const templateInput = document.getElementById('templateInput');
 
             // Control references
             const fontControl = document.getElementById('font-control');
@@ -164,10 +174,6 @@
                 }
             }
             
-            /**
-             * FINAL, RELIABLE EXPORT: Manually renders the entire document to a canvas from scratch.
-             * This avoids all html2canvas bugs by giving us full pixel control.
-             */
             async function exportToImage() {
                 deselectAll();
                 const scale = 2; // For high-resolution
@@ -182,6 +188,7 @@
                 ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
                 const templateName = frameSelector.value;
                 if (templateName !== 'none') {
+                    // For custom templates, the URL is already in the templates object
                     const bgUrl = templates[templateName].slice(5, -2);
                     try {
                         const bgImage = await loadImage(bgUrl);
@@ -537,6 +544,32 @@
                     outputContainer.style.backgroundRepeat = 'no-repeat';
                 }
             });
+
+            addTemplateButton.addEventListener('click', () => templateInput.click());
+            templateInput.addEventListener('change', (e) => {
+                 if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        const dataUrl = re.target.result;
+                        const templateId = `custom-${Date.now()}`;
+                        
+                        // Add to templates object
+                        templates[templateId] = `url(${dataUrl})`;
+
+                        // Add to dropdown
+                        const option = document.createElement('option');
+                        option.value = templateId;
+                        option.textContent = file.name;
+                        frameSelector.appendChild(option);
+
+                        // Select the new template
+                        frameSelector.value = templateId;
+                        frameSelector.dispatchEvent(new Event('change'));
+                    };
+                    reader.readAsDataURL(file);
+                 }
+            });
             
             function handleControlChange(control, property) {
                 if (activeElement) {
@@ -600,7 +633,9 @@
                         elements = [];
                         deselectAll();
                         
-                        frameSelector.value = saveData.template;
+                        // NOTE: Custom templates from saved files are not yet supported.
+                        // This will default to 'none' if the template isn't built-in.
+                        frameSelector.value = saveData.template in templates ? saveData.template : 'none';
                         frameSelector.dispatchEvent(new Event('change'));
                         
                         saveData.elements.forEach(elData => {
