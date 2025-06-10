@@ -9,12 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Bogart&family=Cousine&family=Cutive+Mono&family=IBM+Plex+Mono&family=Libre+Baskerville&family=Oranienbaum&family=Press+Start+2P&family=Special+Elite&family=VT323&family=Tinos&family=UnifrakturMaguntia&family=Vollkorn&display=swap" rel="stylesheet">
-    <!-- PDF Export Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* Core style for the text blocks, ensuring it's black */
-        .output-text { color: #000000; white-space: pre-wrap; outline: none; height: 100%; overflow: hidden;}
+        .output-text { color: #000000; white-space: pre-wrap; outline: none; height: 100%; overflow: hidden; line-height: 1.2; }
         
         /* Font family definitions */
         .font-vt323 { font-family: 'VT323', monospace; }
@@ -74,15 +71,15 @@
             </div>
             <div id="text-controls" class="hidden border-t pt-4">
                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
-                     <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
-                     <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
+                      <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
+                      <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
+                      <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
                  </div>
                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                     <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
-                     <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
-                     <div><label class="block text-sm">Ink Saturation</label><input type="range" id="ink-control" class="w-full" min="0" max="10" value="4"></div>
-                     <div><label class="block text-sm">Blot</label><input type="range" id="blot-control" class="w-full" min="0" max="10" value="0"></div>
+                      <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
+                      <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
+                      <div><label class="block text-sm">Ink Saturation</label><input type="range" id="ink-control" class="w-full" min="0" max="10" value="4"></div>
+                      <div><label class="block text-sm">Blot</label><input type="range" id="blot-control" class="w-full" min="0" max="10" value="0"></div>
                  </div>
             </div>
         </div>
@@ -95,11 +92,11 @@
             <button id="saveButton" class="px-6 py-3 bg-teal-600 text-white font-bold rounded-md">Save Project</button>
             <button id="loadButton" class="px-6 py-3 bg-orange-500 text-white font-bold rounded-md">Load Project</button>
             <input type="file" id="loadInput" class="hidden" accept=".json">
-            <button id="exportPdfButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md flex items-center">Export PDF</button>
+            <button id="exportImageButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md flex items-center">Export PNG</button>
         </div>
 
         <!-- Output Canvas -->
-        <div id="outputContainer" class="relative mt-6 bg-white p-2 rounded-lg shadow-inner overflow-hidden min-h-[800px]">
+        <div id="outputContainer" class="relative mt-6 bg-white rounded-lg shadow-inner overflow-hidden min-h-[800px] w-[800px] h-[1000px] mx-auto">
              <div id="contentLayer" class="absolute inset-0"></div>
         </div>
     </div>
@@ -117,7 +114,7 @@
             const saveButton = document.getElementById('saveButton');
             const loadButton = document.getElementById('loadButton');
             const loadInput = document.getElementById('loadInput');
-            const exportPdfButton = document.getElementById('exportPdfButton');
+            const exportImageButton = document.getElementById('exportImageButton');
 
             // Control references
             const fontControl = document.getElementById('font-control');
@@ -132,39 +129,166 @@
             let elements = [];
             let activeElement = null;
             let action = { type: null, startX: 0, startY: 0, startW: 0, startH: 0, startRot: 0 };
+            const fontMap = { 
+                'font-special-elite': "'Special Elite', cursive", 'font-cutive-mono': "'Cutive Mono', monospace", 'font-bogart': "'Bogart', serif", 'font-vt323': "'VT323', monospace",
+                'font-anonymous-pro': "'Anonymous Pro', monospace", 'font-cousine': "'Cousine', monospace", 'font-ibm-plex-mono': "'IBM Plex Mono', monospace", 'font-libre-baskerville': "'Libre Baskerville', serif",
+                'font-oranienbaum': "'Oranienbaum', serif", 'font-tinos': "'Tinos', serif", 'font-unifrakturmaguntia': "'UnifrakturMaguntia', cursive", 'font-vollkorn': "'Vollkorn', serif"
+            };
             
-            // Templates for document backgrounds. Stroke colors are now #000 (black).
+            // Templates for document backgrounds.
             const templates = {
                 none: 'none',
                 ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")`,
-                hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M100 200 H 500 M 100 600 H 500 M 300 200 V 600'/%3E%3C/svg%3E")`,
-                boat: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cg stroke='%23000' stroke-width='2'%3E%3Cpath d='M0 330 H 800 M0 380 H 800 M0 800 H 800 M560 850 H 800 M560 900 H 800 M0 950 H 800' /%3E%3Cpath d='M80 330 V 800 M560 330 V 950 M680 330 V 950' /%3E%3C/g%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")`,
-                lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='26'%3E%3Cpath d='M0 25 H 100' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E")`,
-                columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
+                hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M100 200 H 700 M 100 800 H 700 M 400 200 V 800'/%3E%3C/svg%3E")`,
+                boat: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cg stroke='%23000' stroke-width='2'%3E%3Cpath d='M0 330 H 800 M0 380 H 800 M0 600 H 800 M560 650 H 800 M560 700 H 800 M0 750 H 800' /%3E%3Cpath d='M80 330 V 600 M560 330 V 750 M680 330 V 750' /%3E%3C/g%3E%3Crect x='1' y='1' width='798' height='998' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")`,
+                lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 26'%3E%3Crect width='100%25' height='100%25' fill='white'/%3E%3Cpath d='M0 25 H 100' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E")`,
+                columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23000' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
             };
+            
+            // --- Core Application Logic ---
+            const EXPORT_WIDTH = 800;
+            const EXPORT_HEIGHT = 1000;
 
-            const { jsPDF } = window.jspdf;
-
-            // Function to export the current view to a PDF file
-            function exportToPDF() {
+            function commitActiveText() {
+                const editableEl = document.querySelector('.output-text[contenteditable="true"]');
+                if (editableEl) {
+                    const wrapper = editableEl.closest('.draggable-wrapper');
+                    if (wrapper) {
+                        const elData = elements.find(el => el.id == wrapper.dataset.id);
+                        if (elData && elData.text !== editableEl.innerText) {
+                            elData.text = editableEl.innerText;
+                            renderText(elData);
+                        }
+                        editableEl.contentEditable = 'false';
+                    }
+                }
+            }
+            
+            /**
+             * FINAL, RELIABLE EXPORT: Manually renders the entire document to a canvas from scratch.
+             * This avoids all html2canvas bugs by giving us full pixel control.
+             */
+            async function exportToImage() {
                 deselectAll();
-                const textBlocks = document.querySelectorAll('.output-text');
-                textBlocks.forEach(block => { block.style.overflow = 'visible'; });
+                const scale = 2; // For high-resolution
+                const canvas = document.createElement('canvas');
+                canvas.width = EXPORT_WIDTH * scale;
+                canvas.height = EXPORT_HEIGHT * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.scale(scale, scale);
 
-                html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
-                    .then(canvas => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-                        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                        pdf.save("historical-document.pdf");
-                        textBlocks.forEach(block => { block.style.overflow = 'hidden'; });
-                    }).catch(err => {
-                        console.error("Error exporting to PDF:", err);
-                        textBlocks.forEach(block => { block.style.overflow = 'hidden'; });
-                    });
+                // 1. Draw background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
+                const templateName = frameSelector.value;
+                if (templateName !== 'none') {
+                    const bgUrl = templates[templateName].slice(5, -2);
+                    try {
+                        const bgImage = await loadImage(bgUrl);
+                         if (templateName === 'lined') {
+                            const pattern = ctx.createPattern(bgImage, 'repeat');
+                            ctx.fillStyle = pattern;
+                            ctx.fillRect(0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
+                        } else {
+                            ctx.drawImage(bgImage, 0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
+                        }
+                    } catch (e) { console.error("Could not load background template for export", e); }
+                }
+
+                // 2. Sequentially draw all elements
+                for (const elData of elements) {
+                    if (elData.type === 'image') {
+                        await drawImageOnCanvas(ctx, elData);
+                    } else {
+                        drawTextOnCanvas(ctx, elData);
+                    }
+                }
+
+                // 3. Trigger download
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = 'historical-document.png';
+                a.click();
             }
 
-            // Creates a single styled character with various effects
+            function loadImage(src) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
+            }
+            
+            async function drawImageOnCanvas(ctx, elData) {
+                 try {
+                    const img = await loadImage(elData.src);
+                    ctx.save();
+                    ctx.translate(elData.x + elData.width / 2, elData.y + (elData.width / img.width * img.height) / 2);
+                    ctx.rotate(elData.rotation * Math.PI / 180);
+                    ctx.drawImage(img, -elData.width / 2, -(elData.width / img.width * img.height) / 2, elData.width, elData.width / img.width * img.height);
+                    ctx.restore();
+                 } catch (e) {
+                     console.error("Could not load image for export", e);
+                 }
+            }
+
+            function drawTextOnCanvas(ctx, elData) {
+                const { text, font, size, jitter, rotation: textRotation, ink, corruption, blot, x, y, width, rotation: elRotation } = elData;
+                
+                ctx.save();
+                ctx.font = `${size}px ${fontMap[font]}`;
+                ctx.fillStyle = '#000000';
+                ctx.textBaseline = 'top';
+
+                // Apply element's overall rotation
+                ctx.translate(x + width / 2, y);
+                ctx.rotate(elRotation * Math.PI / 180);
+                ctx.translate(-(x + width / 2), -y);
+                
+                const lines = text.split('\n');
+                const lineHeight = size * 1.2;
+                let currentY = y;
+
+                lines.forEach(line => {
+                    let currentX = x;
+                    for (const char of line) {
+                        const charToRender = (Math.random() * 100 < corruption) ? 
+                            ['█', '▓', '▒', '░', '#', '?', '&', '%', '$', '@'][Math.floor(Math.random() * 10)] : 
+                            char;
+
+                        const xOffset = (Math.random() - 0.5) * 1.5 * (jitter / 10);
+                        const yOffset = (Math.random() - 0.5) * 1.5 * (jitter / 10);
+                        const rot = (Math.random() - 0.5) * 2.0 * (textRotation / 10);
+                        
+                        const baseOpacity = 0.4 + (ink / 10) * 0.6;
+                        const opacityVariation = (1.0 - (ink / 10)) * 0.5;
+                        const randomFlicker = (Math.random() - 0.5) * opacityVariation;
+                        let finalOpacity = baseOpacity + randomFlicker;
+                        if (Math.random() < (1.0 - (ink / 10.0)) * 0.1) finalOpacity *= 0.6;
+
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0.1, Math.min(1, finalOpacity));
+                        ctx.translate(currentX + xOffset, currentY + yOffset);
+                        ctx.rotate(rot * Math.PI / 180);
+
+                        if (Math.random() < (blot / 10.0) * 0.1) {
+                           ctx.shadowColor = `rgba(0,0,0,${0.5 + Math.random() * 0.5})`;
+                           ctx.shadowBlur = (Math.random() * (blot / 10.0) * 0.7) + 0.2;
+                        }
+                        
+                        ctx.fillText(charToRender, 0, 0);
+                        ctx.restore();
+                        
+                        currentX += ctx.measureText(char).width;
+                    }
+                    currentY += lineHeight;
+                });
+
+                ctx.restore();
+            }
+
             function createStyledChar(char, jitter, rotation, ink, corruption, blot) {
                 const span = document.createElement('span');
                 span.className = 'styled-char';
@@ -177,29 +301,19 @@
                 
                 const jitterFactor = jitter / 10.0;
                 const rotationFactor = rotation / 10.0;
-                
                 const xOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const yOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
                 const rot = (Math.random() - 0.5) * 2.0 * rotationFactor;
-                
-                // --- Ink Saturation & Blot Logic (Now Separated) ---
                 const inkValue = parseInt(ink, 10);
                 const blotValue = parseInt(blot, 10);
-
-                // 1. Ink Saturation controls base opacity and faintness.
                 const baseOpacity = 0.4 + (inkValue / 10.0) * 0.6;
                 const opacityVariation = (1.0 - (inkValue / 10.0)) * 0.5;
                 const randomFlicker = (Math.random() - 0.5) * opacityVariation;
                 let finalOpacity = baseOpacity + randomFlicker;
 
-                const faintChance = (1.0 - (inkValue / 10.0)) * 0.1;
-                if (Math.random() < faintChance) {
-                    finalOpacity *= 0.6;
-                }
+                if (Math.random() < (1.0 - (inkValue / 10.0)) * 0.1) finalOpacity *= 0.6;
 
-                // 2. Blot controls chance and intensity of ink blots.
-                const blotChance = (blotValue / 10.0) * 0.1; // Max 10% chance
-                if (Math.random() < blotChance) {
+                if (Math.random() < (blotValue / 10.0) * 0.1) {
                     span.style.fontWeight = 'bold';
                     const blurAmount = (Math.random() * (blotValue / 10.0) * 0.7) + 0.2;
                     const blotOpacity = 0.5 + (Math.random() * 0.5);
@@ -209,11 +323,9 @@
 
                 span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rot}deg)`;
                 span.style.opacity = Math.max(0.1, Math.min(1, finalOpacity));
-
                 return span;
             }
 
-            // Renders the full text of an element with all applied styles
             function renderText(elData) {
                 const { el, text, font, size, jitter, rotation, ink, corruption, blot } = elData;
                 const contentDiv = el.querySelector('.output-text');
@@ -231,7 +343,6 @@
                 });
             }
 
-            // Creates a new element (text or image) and adds it to the canvas
             function createElement(type, initialData) {
                 const id = initialData?.id || Date.now();
                 const wrapper = document.createElement('div');
@@ -245,9 +356,7 @@
                 
                 let elData;
 
-                // Robustly create element data by merging defaults with initialData
                 if (type === 'text') {
-                    wrapper.classList.add('output-text-block');
                     const textDiv = document.createElement('div');
                     textDiv.className = 'output-text';
                     textDiv.contentEditable = "false";
@@ -256,21 +365,16 @@
                     const textDefaults = {
                         text: 'New Text Block', font: 'font-special-elite', size: 16,
                         jitter: 5, rotation: 2, ink: 4, corruption: 0, blot: 0,
-                        x: 100, y: 100, width: 300
+                        x: 100, y: 100, width: 300, rotation: 0
                     };
-
                     elData = { ...textDefaults, ...initialData, id, el: wrapper, type: 'text' };
                     renderText(elData);
                 } else { // type === 'image'
-                    wrapper.classList.add('draggable-image-wrapper');
                     const img = document.createElement('img');
-                    img.src = initialData?.src; // Safely access src
+                    img.src = initialData?.src;
                     wrapper.append(img, resizeHandle, rotateHandle);
 
-                    const imageDefaults = {
-                        x: 50, y: 50, width: 150, rotation: 0, aspectRatio: 1
-                    };
-
+                    const imageDefaults = { x: 50, y: 50, width: 150, rotation: 0 };
                     elData = { ...imageDefaults, ...initialData, id, el: wrapper, type: 'image' };
                 }
                 
@@ -284,13 +388,11 @@
                 if (!initialData?.loadedFromFile) selectElement(elData);
             }
             
-            // Updates the control panel based on the selected element's properties
             function updateControls() {
                 if (!activeElement || activeElement.type === 'image') {
                     controlsContainer.style.display = 'none';
                     return;
                 }
-                
                 controlsContainer.style.display = 'block';
                 const { font, size, corruption, jitter, rotation, ink, blot } = activeElement;
                 fontControl.innerHTML = getFontOptions(font);
@@ -302,17 +404,15 @@
                 blotControl.value = blot;
             }
 
-            // Generates the HTML for the font selector dropdown
             function getFontOptions(selectedFont) {
-                const fonts = { 
+                 const fontDisplayNames = { 
                     'font-special-elite': 'Classic Typewriter', 'font-cutive-mono': 'Clean Mono', 'font-bogart': 'Classic Serif', 'font-vt323': 'Dot-Matrix',
                     'font-anonymous-pro': 'Anonymous Pro', 'font-cousine': 'Courier New', 'font-ibm-plex-mono': 'IBM Plex Mono', 'font-libre-baskerville': 'Baskerville',
                     'font-oranienbaum': 'Oranienbaum', 'font-tinos': 'Tinos', 'font-unifrakturmaguntia': 'Blackletter', 'font-vollkorn': 'Vollkorn'
                 };
-                return Object.entries(fonts).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
+                return Object.entries(fontDisplayNames).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
             }
             
-            // Selection and deselect functions
             function selectElement(elData) {
                 if (activeElement === elData) return;
                 deselectAll();
@@ -322,6 +422,7 @@
             }
 
             function deselectAll() {
+                commitActiveText();
                 if (activeElement) {
                     activeElement.el.classList.remove('selected');
                 }
@@ -331,32 +432,37 @@
 
             // --- Event Listeners ---
 
-            // Mouse down for selecting, dragging, resizing, rotating
             document.addEventListener('mousedown', (e) => {
+                const isControl = e.target.closest('#text-controls, .control-item, .flex-wrap');
+                if (isControl && !e.target.closest('.draggable-wrapper')) return;
+
                 const wrapper = e.target.closest('.draggable-wrapper');
-                if (!wrapper) { if (!e.target.closest('#text-controls')) deselectAll(); return; }
+
+                if (!wrapper) {
+                    deselectAll();
+                    return;
+                }
                 
                 const elData = elements.find(el => el.id == wrapper.dataset.id);
                 if (!elData) return;
-                
+
+                if (activeElement !== elData) {
+                    commitActiveText();
+                }
+
                 selectElement(elData);
 
                 if (e.detail === 2 && activeElement.type === 'text') {
+                    action.type = null;
                     const textDiv = activeElement.el.querySelector('.output-text');
                     textDiv.contentEditable = 'true';
                     textDiv.focus();
+                    const selection = window.getSelection();
                     const range = document.createRange();
                     range.selectNodeContents(textDiv);
-                    window.getSelection().removeAllRanges();
-                    window.getSelection().addRange(range);
-                    
-                    textDiv.addEventListener('blur', () => {
-                        textDiv.contentEditable = 'false';
-                        if (activeElement) {
-                            activeElement.text = textDiv.innerText;
-                            renderText(activeElement);
-                        }
-                    }, { once: true });
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    e.stopPropagation();
                     return;
                 }
                 
@@ -366,7 +472,6 @@
                 action.startElX = elData.x;
                 action.startElY = elData.y;
                 action.startW = elData.el.offsetWidth;
-                action.startH = elData.el.offsetHeight;
 
                 if (e.target.classList.contains('resize-handle')) {
                     action.type = 'resize';
@@ -382,7 +487,6 @@
                 }
             });
 
-            // Mouse move for active actions
             document.addEventListener('mousemove', (e) => {
                 if (!action.type || !action.elData) return;
                 e.preventDefault();
@@ -409,20 +513,16 @@
                 }
             });
 
-            // Mouse up to end actions
-            document.addEventListener('mouseup', () => { action.type = null; action.elData = null; });
+            document.addEventListener('mouseup', () => { action.type = null; });
             
-            // Keydown for deleting elements
             document.addEventListener('keydown', (e) => {
-                 if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
-                     const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
-                     if(!targetIsEditable) {
-                         e.preventDefault();
-                         activeElement.el.remove();
-                         elements = elements.filter(el => el.id !== activeElement.id);
-                         deselectAll();
-                     }
-                 }
+                const targetIsEditable = document.activeElement.isContentEditable;
+                if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement && !targetIsEditable) {
+                    e.preventDefault();
+                    activeElement.el.remove();
+                    elements = elements.filter(el => el.id !== activeElement.id);
+                    deselectAll();
+                }
             });
 
             // Listeners for controls and buttons
@@ -430,8 +530,8 @@
                 const template = templates[frameSelector.value];
                 outputContainer.style.backgroundImage = template !== 'none' ? template : '';
                 if(frameSelector.value === 'lined') {
-                    outputContainer.style.backgroundSize = '100% 26px';
-                    outputContainer.style.backgroundRepeat = 'repeat-y';
+                    outputContainer.style.backgroundSize = 'auto';
+                    outputContainer.style.backgroundRepeat = 'repeat';
                 } else {
                     outputContainer.style.backgroundSize = '100% 100%';
                     outputContainer.style.backgroundRepeat = 'no-repeat';
@@ -461,19 +561,16 @@
                     const reader = new FileReader();
                     reader.onload = (re) => {
                         const imgSrc = re.target.result;
-                        const tempImg = new Image();
-                        tempImg.onload = () => {
-                            const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
-                            createElement('image', { src: imgSrc, x: 50, y: 50, width: 150, aspectRatio: aspectRatio, rotation: 0 });
-                        };
-                        tempImg.src = imgSrc;
+                        createElement('image', { src: imgSrc });
                     };
                     reader.readAsDataURL(e.target.files[0]);
                 }
             });
-            exportPdfButton.addEventListener('click', exportToPDF);
+            
+            exportImageButton.addEventListener('click', exportToImage);
             
             saveButton.addEventListener('click', () => {
+                commitActiveText();
                 const saveData = {
                     template: frameSelector.value,
                     elements: elements.map(el => {
@@ -497,16 +594,25 @@
                 reader.onload = (re) => {
                     try {
                         const saveData = JSON.parse(re.target.result);
-                        elements = [];
+                        if(!saveData.elements || !saveData.template) throw new Error("Invalid file format");
+                        
                         contentLayer.innerHTML = '';
-                        frameSelector.value = saveData.template || 'none';
+                        elements = [];
+                        deselectAll();
+                        
+                        frameSelector.value = saveData.template;
                         frameSelector.dispatchEvent(new Event('change'));
-                        saveData.elements?.forEach(elData => {
+                        
+                        saveData.elements.forEach(elData => {
                             createElement(elData.type, {...elData, loadedFromFile: true});
                         });
                     } catch (error) {
                         console.error("Error loading or parsing file:", error);
-                        alert("Could not load the project file. It might be corrupted.");
+                        const msgBox = document.createElement('div');
+                        msgBox.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:red; color:white; padding:10px 20px; border-radius:5px; z-index:1000;';
+                        msgBox.textContent = "Could not load project. File may be corrupted.";
+                        document.body.appendChild(msgBox);
+                        setTimeout(() => msgBox.remove(), 3000);
                     }
                 };
                 reader.readAsText(file);
@@ -514,7 +620,7 @@
 
             // Initial Load
             frameSelector.dispatchEvent(new Event('change'));
-            createElement('text'); // Add an initial text block to start
+            createElement('text');
         });
     </script>
 </body>
