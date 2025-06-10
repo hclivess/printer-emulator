@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historical Text Generator</title>
+    <title>Historical Document Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Historical Fonts from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,378 +13,365 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* Base styling for the output text container */
-        .output-text { color: #2d3748; white-space: pre-wrap; }
-
-        /* --- Font Normalization --- */
-        .font-vt323 { font-family: 'VT323', monospace; font-size: 1.25em; letter-spacing: 2px; line-height: 1.5em; }
-        .font-special-elite { font-family: 'Special Elite', cursive; font-size: 1em; letter-spacing: 1.5px; line-height: 1.6em; }
-        .font-cutive-mono { font-family: 'Cutive Mono', monospace; font-size: 1.05em; letter-spacing: 1px; line-height: 1.55em; }
-        .font-bogart { font-family: 'Bogart', serif; font-size: 1.2em; letter-spacing: 0.5px; line-height: 1.6em; }
-        .font-press-start-2p { font-family: 'Press Start 2P', cursive; font-size: 0.75em; line-height: 1.5em; }
-        .font-ibm-plex-mono { font-family: 'IBM Plex Mono', monospace; font-size: 1em; line-height: 1.6em; }
-        .font-anonymous-pro { font-family: 'Anonymous Pro', monospace; font-size: 1.1em; line-height: 1.6em; }
-        .font-cousine { font-family: 'Cousine', monospace; font-size: 1.05em; line-height: 1.6em; }
-        .font-libre-baskerville { font-family: 'Libre Baskerville', serif; font-size: 1.05em; line-height: 1.7em; }
-        .font-oranienbaum { font-family: 'Oranienbaum', serif; font-size: 1.25em; line-height: 1.7em; }
-
-        /* Style for individual characters to add irregularity */
-        .styled-char { display: inline-block; margin: 0 -2px; padding: 0 2px; }
+        .output-text-block { position: absolute; cursor: move; padding: 5px; border: 1px dashed transparent; transition: border-color 0.2s; }
+        .output-text-block:hover, .output-text-block.selected { border-color: #93c5fd; }
+        .output-text { color: #2d3748; white-space: pre-wrap; outline: none; }
         
-        /* Image container styling */
-        .image-container { position: absolute; }
-        .image-preview { height: auto; object-fit: contain; user-select: none; pointer-events: none; }
+        .font-vt323 { font-family: 'VT323', monospace; }
+        .font-special-elite { font-family: 'Special Elite', cursive; }
+        .font-cutive-mono { font-family: 'Cutive Mono', monospace; }
+        .font-bogart { font-family: 'Bogart', serif; }
+        .font-press-start-2p { font-family: 'Press Start 2P', cursive; }
+        .font-ibm-plex-mono { font-family: 'IBM Plex Mono', monospace; }
+        .font-anonymous-pro { font-family: 'Anonymous Pro', monospace; }
+        .font-cousine { font-family: 'Cousine', monospace; }
+        .font-libre-baskerville { font-family: 'Libre Baskerville', serif; }
+        .font-oranienbaum { font-family: 'Oranienbaum', serif; }
 
-        #logo-preview { width: 100px; }
-        #signature-preview { width: 150px; }
+        .styled-char { display: inline-block; }
         
-        /* Slider styling */
+        #outputContainer { background-size: 100% 100%; background-position: center; background-repeat: no-repeat; }
+        
+        .draggable-image-wrapper { position: absolute; cursor: move; border: 2px dashed transparent; transition: border-color 0.2s; }
+        .draggable-image-wrapper:hover, .draggable-image-wrapper.selected { border-color: #3b82f6; }
+        .draggable-image-wrapper.selected .resize-handle, .draggable-image-wrapper.selected .rotate-handle,
+        .output-text-block.selected .resize-handle, .output-text-block.selected .rotate-handle { display: block; }
+        .draggable-image-wrapper img { width: 100%; height: 100%; pointer-events: none; }
+        .resize-handle, .rotate-handle { display: none; }
+        .resize-handle { position: absolute; width: 12px; height: 12px; background: #3b82f6; border: 1px solid white; border-radius: 50%; bottom: -6px; right: -6px; cursor: se-resize; }
+        .rotate-handle { position: absolute; width: 12px; height: 12px; background: #f59e0b; border: 1px solid white; border-radius: 50%; top: -20px; left: calc(50% - 6px); cursor: grab; }
+        .rotate-handle::before { content: ''; position: absolute; width: 2px; height: 14px; background: #f59e0b; left: 5px; bottom: 8px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4A5568; cursor: pointer; border-radius: 50%; }
-        
-        /* --- Frame Styles --- */
-        #outputContainer { transition: all 0.2s ease-in-out; }
-        .frame-simple { border: 1px solid #9ca3af; }
-        .frame-double { border: 4px double #9ca3af; }
-        .frame-corners {
-            --corner-size: 25px;
-            --corner-thickness: 2px;
-            --corner-color: #6b7280;
-            background-image:
-                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
-                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
-                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color)),
-                linear-gradient(var(--corner-color), var(--corner-color)), linear-gradient(var(--corner-color), var(--corner-color));
-            background-repeat: no-repeat;
-            background-position: 
-                1rem 1rem, 1rem 1rem, /* Top-left */
-                calc(100% - 1rem) 1rem, calc(100% - 1rem) 1rem, /* Top-right */
-                1rem calc(100% - 1rem), 1rem calc(100% - 1rem), /* Bottom-left */
-                calc(100% - 1rem) calc(100% - 1rem), calc(100% - 1rem) calc(100% - 1rem); /* Bottom-right */
-            background-size: var(--corner-size) var(--corner-thickness), var(--corner-thickness) var(--corner-size);
-        }
-
     </style>
 </head>
 <body class="bg-gray-200 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl bg-gray-100 rounded-lg shadow-2xl p-6">
-        <h1 class="text-4xl text-center text-gray-700 mb-2" style="font-family: 'Special Elite', cursive;">Historical Text Generator</h1>
-        <p class="text-center text-gray-500 mb-6">Create authentic-looking historical documents with separate header and body controls.</p>
-
-        <!-- Input Section -->
-        <div class="space-y-4">
-             <div class="bg-white p-4 rounded-md shadow-inner">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Header (Pre-Printed Template)</label>
-                <textarea id="headerText" class="w-full h-24 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"></textarea>
-            </div>
-             <div class="bg-white p-4 rounded-md shadow-inner">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Body (Typed Content)</label>
-                <textarea id="bodyText" class="w-full h-48 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"></textarea>
+    <div class="w-full max-w-5xl bg-gray-100 rounded-lg shadow-2xl p-6">
+        <h1 class="text-4xl text-center text-gray-700 mb-2" style="font-family: 'Special Elite', cursive;">Historical Document Generator</h1>
+        
+        <!-- Controls -->
+        <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
+            <div><h3 class="font-bold text-gray-800 text-lg">Document Style</h3><label for="frameSelector" class="block text-sm font-medium text-gray-700">Background Template</label><select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md"><option value="none" selected>None (Blank)</option><option value="ovation">Ovation Invoice</option><option value="hotel">Hotel Bill</option><option value="lined">Lined Paper</option><option value="columns">Vertical Columns</option></select></div>
+            <div id="text-controls" class="hidden border-t pt-4">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block text-sm">Font</label><select id="font-control" class="w-full"></select></div>
+                    <div><label class="block text-sm">Size</label><input type="range" id="size-control" class="w-full" min="8" max="48"></div>
+                    <div><label class="block text-sm">Corruption</label><input type="range" id="corruption-control" class="w-full" min="0" max="20" value="0"></div>
+                 </div>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div><label class="block text-sm">Jitter</label><input type="range" id="jitter-control" class="w-full" min="0" max="10"></div>
+                    <div><label class="block text-sm">Rotation</label><input type="range" id="rotation-control" class="w-full" min="0" max="10"></div>
+                    <div><label class="block text-sm">Ink Variation</label><input type="range" id="ink-control" class="w-full" min="0" max="10"></div>
+                 </div>
             </div>
         </div>
         
-        <!-- Controls Section -->
-        <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-6">
-            <!-- Document Controls -->
-            <div class="space-y-4">
-                 <h3 class="font-bold text-gray-800 text-lg">Document Style</h3>
-                 <div>
-                    <label for="frameSelector" class="block text-sm font-medium text-gray-700">Frame Style</label>
-                    <select id="frameSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        <option value="frame-none" selected>None</option>
-                        <option value="frame-simple">Simple Border</option>
-                        <option value="frame-double">Double Border</option>
-                        <option value="frame-corners">Corner Brackets</option>
-                    </select>
-                </div>
-            </div>
-            <!-- Header Controls -->
-            <div class="space-y-4 pt-4 border-t">
-                <h3 class="font-bold text-gray-800 text-lg">Header Controls</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
-                     <div>
-                        <label for="headerFontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
-                        <select id="headerFontSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                            <option value="font-bogart" selected>Classic Serif (Prop)</option>
-                            <option value="font-special-elite">Classic Typewriter (Prop)</option>
-                            <option value="font-libre-baskerville">Baskerville (Prop)</option>
-                            <option value="font-oranienbaum">Oranienbaum (Prop)</option>
-                            <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
-                            <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
-                            <option value="font-anonymous-pro">Programmer (Mono)</option>
-                            <option value="font-cousine">Courier (Mono)</option>
-                            <option value="font-vt323">Dot-Matrix (Mono)</option>
-                            <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="headerSizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
-                        <input id="headerSizeSlider" type="range" min="10" max="32" value="18" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <div>
-                        <label for="headerIrregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity</label>
-                        <input id="headerIrregularitySlider" type="range" min="0" max="10" value="3" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                </div>
-            </div>
-            <!-- Body Controls -->
-            <div class="space-y-4 pt-4 border-t">
-                 <h3 class="font-bold text-gray-800 text-lg">Body Controls</h3>
-                 <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
-                    <div>
-                        <label for="bodyFontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
-                        <select id="bodyFontSelector" class="control-item mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                             <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
-                             <option value="font-bogart">Classic Serif (Prop)</option>
-                             <option value="font-libre-baskerville">Baskerville (Prop)</option>
-                             <option value="font-oranienbaum">Oranienbaum (Prop)</option>
-                             <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
-                             <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
-                             <option value="font-anonymous-pro">Programmer (Mono)</option>
-                             <option value="font-cousine">Courier (Mono)</option>
-                             <option value="font-vt323">Dot-Matrix (Mono)</option>
-                             <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="bodySizeSlider" class="block text-sm font-medium text-gray-700">Text Size</label>
-                        <input id="bodySizeSlider" type="range" min="10" max="28" value="16" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <div>
-                        <label for="bodyIrregularitySlider" class="block text-sm font-medium text-gray-700">Irregularity</label>
-                        <input id="bodyIrregularitySlider" type="range" min="0" max="10" value="6" class="control-item mt-1 w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                </div>
-            </div>
-            <!-- Image Controls -->
-            <div id="logo-controls" class="hidden space-y-2 pt-4 border-t"><h3 class="font-bold text-gray-600">Logo Controls</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label for="logoSize" class="block text-sm font-medium text-gray-700">Size</label><input id="logoSize" type="range" min="30" max="400" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="logoX" class="block text-sm font-medium text-gray-700">X</label><input id="logoX" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="logoY" class="block text-sm font-medium text-gray-700">Y</label><input id="logoY" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div></div></div>
-            <div id="signature-controls" class="hidden space-y-2 pt-4 border-t"><h3 class="font-bold text-gray-600">Signature Controls</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label for="signatureSize" class="block text-sm font-medium text-gray-700">Size</label><input id="signatureSize" type="range" min="50" max="500" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="signatureX" class="block text-sm font-medium text-gray-700">X</label><input id="signatureX" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div><div><label for="signatureY" class="block text-sm font-medium text-gray-700">Y</label><input id="signatureY" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div></div></div>
-        </div>
-
+        <!-- Action Buttons -->
         <div class="flex flex-wrap justify-center items-center my-4 gap-4">
-            <button id="logoButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Logo</button>
-            <input type="file" id="logoInput" class="hidden" accept="image/*">
-            <button id="signatureButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Signature</button>
-            <input type="file" id="signatureInput" class="hidden" accept="image/*">
-            <button id="exportPdfButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md hover:bg-purple-700 active:bg-purple-800 transition-transform transform active:scale-95 shadow-lg flex items-center">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Export PDF
-            </button>
+            <button id="addTextButton" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-md">Add Text Block</button>
+            <button id="addImageButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md">Add Image</button>
+            <input type="file" id="imageInput" class="hidden" accept="image/*">
+            <button id="exportPdfButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md flex items-center">Export PDF</button>
         </div>
 
-        <div id="outputContainer" class="relative mt-6 bg-white p-8 rounded-lg shadow-inner overflow-hidden">
-            <div id="logo-container" class="image-container"><img id="logo-preview" src="" alt="Logo Preview" class="image-preview hidden"/></div>
-            <div id="signature-container" class="image-container"><img id="signature-preview" src="" alt="Signature Preview" class="image-preview hidden"/></div>
-            <div class="relative w-full">
-                <div id="headerOutput" class="output-text"></div>
-                <div id="bodyOutput" class="output-text"></div>
-            </div>
+        <!-- Output Canvas -->
+        <div id="outputContainer" class="relative mt-6 bg-white p-2 rounded-lg shadow-inner overflow-hidden min-h-[800px]">
+             <div id="contentLayer" class="absolute inset-0"></div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
-            const headerText = document.getElementById('headerText');
-            const bodyText = document.getElementById('bodyText');
-            const exportPdfButton = document.getElementById('exportPdfButton');
             const outputContainer = document.getElementById('outputContainer');
-            const headerOutput = document.getElementById('headerOutput');
-            const bodyOutput = document.getElementById('bodyOutput');
-            
-            // --- Controls ---
-            const allControls = document.querySelectorAll('.control-item, #headerText, #bodyText');
+            const contentLayer = document.getElementById('contentLayer');
+            const controlsContainer = document.getElementById('text-controls');
             const frameSelector = document.getElementById('frameSelector');
+            const addTextButton = document.getElementById('addTextButton');
+            const addImageButton = document.getElementById('addImageButton');
+            const imageInput = document.getElementById('imageInput');
+            const exportPdfButton = document.getElementById('exportPdfButton');
 
-            // Header Controls
-            const headerFontSelector = document.getElementById('headerFontSelector');
-            const headerSizeSlider = document.getElementById('headerSizeSlider');
-            const headerIrregularitySlider = document.getElementById('headerIrregularitySlider');
+            // Control elements
+            const fontControl = document.getElementById('font-control');
+            const sizeControl = document.getElementById('size-control');
+            const corruptionControl = document.getElementById('corruption-control');
+            const jitterControl = document.getElementById('jitter-control');
+            const rotationControl = document.getElementById('rotation-control');
+            const inkControl = document.getElementById('ink-control');
 
-            // Body Controls
-            const bodyFontSelector = document.getElementById('bodyFontSelector');
-            const bodySizeSlider = document.getElementById('bodySizeSlider');
-            const bodyIrregularitySlider = document.getElementById('bodyIrregularitySlider');
+            let elements = [];
+            let activeElement = null;
+            let action = { type: null, startX: 0, startY: 0, startW: 0, startH: 0, startRot: 0 };
+            
+            const templates = {
+                none: 'none',
+                ovation: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23cccccc' stroke-width='1' fill='none' d='M0 100 H 800 M0 150 H 800 M0 750 H 800 M560 0 V 100 M560 750 V 1000'/%3E%3Cpath stroke='%23cccccc' stroke-width='2' fill='none' d='M1 1 H 799 V 999 H 1 Z'/%3E%3C/svg%3E")`,
+                hotel: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23333' stroke-width='1' d='M100 200 H 500 M 100 600 H 500 M 300 200 V 600'/%3E%3C/svg%3E")`,
+                lined: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='26'%3E%3Cpath d='M0 25 H 100' stroke='%23e2e8f0' stroke-width='1'/%3E%3C/svg%3E")`,
+                columns: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1000'%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='white'/%3E%3Cpath stroke='%23e5e7eb' stroke-width='1' d='M266 0 V 1000 M532 0 V 1000' /%3E%3C/svg%3E")`
+            };
 
-            // Image Elements & Controls
-            const logoButton = document.getElementById('logoButton');
-            const logoInput = document.getElementById('logoInput');
-            const logoPreview = document.getElementById('logo-preview');
-            const logoContainer = document.getElementById('logo-container');
-            const logoControls = document.getElementById('logo-controls');
-            const logoSizeSlider = document.getElementById('logoSize');
-            const logoXSlider = document.getElementById('logoX');
-            const logoYSlider = document.getElementById('logoY');
-
-            const signatureButton = document.getElementById('signatureButton');
-            const signatureInput = document.getElementById('signatureInput');
-            const signaturePreview = document.getElementById('signature-preview');
-            const signatureContainer = document.getElementById('signature-container');
-            const signatureControls = document.getElementById('signature-controls');
-            const signatureSizeSlider = document.getElementById('signatureSize');
-            const signatureXSlider = document.getElementById('signatureX');
-            const signatureYSlider = document.getElementById('signatureY');
-
-            // --- PDF Export ---
             const { jsPDF } = window.jspdf;
-            const exportToPDF = () => {
+
+            function exportToPDF() {
+                deselectAll();
                 html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                    pdf.save("historical-output.pdf");
+                    pdf.save("historical-document.pdf");
                 }).catch(err => console.error("Error exporting to PDF:", err));
-            };
-            
-            // --- Image Handling ---
-            const setupImageInput = (button, input, preview, controls) => {
-                button.addEventListener('click', () => input.click());
-                input.addEventListener('change', (event) => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            preview.src = e.target.result;
-                            preview.classList.remove('hidden');
-                            controls.classList.remove('hidden');
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            };
+            }
 
-            setupImageInput(logoButton, logoInput, logoPreview, logoControls);
-            setupImageInput(signatureButton, signatureInput, signaturePreview, signatureControls);
+            function createStyledChar(char, jitter, rotation, ink, corruption) {
+                const span = document.createElement('span');
+                span.className = 'styled-char';
 
-            const setupImageControls = (container, preview, sizeSlider, xSlider, ySlider) => {
-                const updatePosition = () => {
-                    container.style.left = `${xSlider.value}%`;
-                    container.style.top = `${ySlider.value}%`;
-                    container.style.transform = 'translate(-50%, -50%)';
-                };
-                sizeSlider.addEventListener('input', (e) => { preview.style.width = `${e.target.value}px`; });
-                xSlider.addEventListener('input', updatePosition);
-                ySlider.addEventListener('input', updatePosition);
-                updatePosition();
-            };
+                let charToRender = char;
+                const corruptionChance = corruption; // Slider value is direct percentage
+                if (Math.random() * 100 < corruptionChance) {
+                    const corruptedChars = ['█', '▓', '▒', '░', '#', '?', '&', '%', '$', '@'];
+                    charToRender = corruptedChars[Math.floor(Math.random() * corruptedChars.length)];
+                }
 
-            setupImageControls(logoContainer, logoPreview, logoSizeSlider, logoXSlider, logoYSlider);
-            setupImageControls(signatureContainer, signaturePreview, signatureSizeSlider, signatureXSlider, signatureYSlider);
-
-            // --- Text Generation ---
-            function renderText(targetDiv, text, fontClass, fontSize, irregularity) {
-                const irregularityFactor = irregularity / 10.0;
-                targetDiv.innerHTML = '';
-                targetDiv.className = `w-full output-text ${fontClass}`;
-                targetDiv.style.fontSize = `${fontSize}px`;
+                span.innerHTML = (charToRender === ' ') ? '&nbsp;' : charToRender;
                 
-                const regex = /(\*.*?\*)|(\/.*?\/)|([^*\/]+)/g;
+                const jitterFactor = jitter / 10.0;
+                const rotationFactor = rotation / 10.0;
+                const inkFactor = ink / 10.0;
+                
+                const xOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
+                const yOffset = (Math.random() - 0.5) * 1.5 * jitterFactor;
+                const rot = (Math.random() - 0.5) * 2.0 * rotationFactor;
+                const opacity = 1 - (Math.random() * 0.4 * inkFactor);
+                
+                span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rot}deg)`;
+                span.style.opacity = opacity;
+                return span;
+            }
 
+            function renderText(elData) {
+                const { el, text, font, size, jitter, rotation, ink, corruption } = elData;
+                const contentDiv = el.querySelector('.output-text');
+                contentDiv.innerHTML = '';
+                contentDiv.className = `output-text ${font}`;
+                contentDiv.style.fontSize = `${size}px`;
                 const lines = text.replace(/\u00A0/g, ' ').split('\n');
                 lines.forEach(line => {
                     const lineDiv = document.createElement('div');
-                    const fragments = line.match(regex) || [];
-
-                    fragments.forEach(fragment => {
-                        const style = { isBold: false, isItalic: false };
-                        let cleanFragment = fragment;
-
-                        if (fragment.startsWith('*') && fragment.endsWith('*')) {
-                            style.isBold = true;
-                            cleanFragment = fragment.slice(1, -1);
-                        } else if (fragment.startsWith('/') && fragment.endsWith('/')) {
-                            style.isItalic = true;
-                            cleanFragment = fragment.slice(1, -1);
-                        }
-                        
-                        for (const char of cleanFragment) {
-                            const span = document.createElement('span');
-                            span.className = 'styled-char';
-                            span.innerHTML = (char === ' ') ? '&nbsp;' : char;
-                            
-                            const xOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
-                            const yOffset = (Math.random() - 0.5) * 1.5 * irregularityFactor;
-                            const rotation = (Math.random() - 0.5) * 2.0 * irregularityFactor;
-                            let opacity = 1 - (Math.random() * 0.25 * irregularityFactor);
-
-                            if (style.isBold) {
-                                opacity = Math.max(0.2, opacity - 0.1);
-                                span.style.textShadow = `${0.5 * irregularityFactor}px 0 0 currentColor`;
-                            }
-                            if (style.isItalic) {
-                                span.style.fontStyle = 'italic';
-                            }
-
-                            span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
-                            span.style.opacity = opacity;
-                            lineDiv.appendChild(span);
-                        }
-                    });
-
-                    if (line.trim() === '') { lineDiv.innerHTML = '&nbsp;'; }
-                    targetDiv.appendChild(lineDiv);
+                    for (const char of line) {
+                        lineDiv.appendChild(createStyledChar(char, jitter, rotation, ink, corruption));
+                    }
+                    if (line.trim() === '') lineDiv.innerHTML = '&nbsp;';
+                    contentDiv.appendChild(lineDiv);
                 });
             }
+
+            function createTextBlock() {
+                const id = Date.now();
+                const wrapper = document.createElement('div');
+                wrapper.className = 'output-text-block';
+                wrapper.dataset.id = id;
+                wrapper.style.left = '100px';
+                wrapper.style.top = '100px';
+                wrapper.style.width = '300px';
+                wrapper.style.transform = 'rotate(0deg)';
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'output-text';
+                textDiv.contentEditable = "false";
+                
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle br';
+                const rotateHandle = document.createElement('div');
+                rotateHandle.className = 'rotate-handle';
+
+                wrapper.append(textDiv, resizeHandle, rotateHandle);
+
+                contentLayer.appendChild(wrapper);
+                const elData = {
+                    id, el: wrapper, type: 'text', text: 'New Text Block', 
+                    font: 'font-special-elite', size: 16, 
+                    jitter: 5, rotation: 2, ink: 4, corruption: 0,
+                    x: 100, y: 100, width: 300, rotation: 0
+                };
+                elements.push(elData);
+                renderText(elData);
+                selectElement(elData);
+            }
+
+            function createImageElement(src) {
+                const id = Date.now();
+                const wrapper = document.createElement('div');
+                wrapper.className = 'draggable-image-wrapper';
+                wrapper.dataset.id = id;
+                wrapper.style.left = '50px';
+                wrapper.style.top = '50px';
+                wrapper.style.width = '150px';
+                wrapper.style.transform = 'rotate(0deg)';
+                const img = document.createElement('img');
+                img.src = src;
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle br';
+                const rotateHandle = document.createElement('div');
+                rotateHandle.className = 'rotate-handle';
+                wrapper.append(img, resizeHandle, rotateHandle);
+                contentLayer.appendChild(wrapper);
+                const elData = { id, el: wrapper, type: 'image', src, x: 50, y: 50, width: 150, rotation: 0 };
+                elements.push(elData);
+                selectElement(elData);
+            }
             
-            const updateFrameStyle = () => {
-                const frameClass = frameSelector.value;
-                outputContainer.classList.remove('frame-none', 'frame-simple', 'frame-double', 'frame-corners');
-                if (frameClass !== 'frame-none') {
-                    outputContainer.classList.add(frameClass);
+            function updateControls() {
+                if (!activeElement || activeElement.type !== 'text') {
+                    controlsContainer.style.display = 'none';
+                    return;
                 }
-            };
+                
+                controlsContainer.style.display = 'grid';
+                const { font, size, corruption, jitter, rotation, ink } = activeElement;
+                fontControl.innerHTML = getFontOptions(font);
+                sizeControl.value = size;
+                corruptionControl.value = corruption;
+                jitterControl.value = jitter;
+                rotationControl.value = rotation;
+                inkControl.value = ink;
+            }
 
-            const fullRender = () => {
-                updateFrameStyle();
-                renderText(headerOutput, headerText.value, headerFontSelector.value, headerSizeSlider.value, headerIrregularitySlider.value);
-                renderText(bodyOutput, bodyText.value, bodyFontSelector.value, bodySizeSlider.value, bodyIrregularitySlider.value);
-            };
-
-            // --- Event Listeners ---
-            exportPdfButton.addEventListener('click', exportToPDF);
-            allControls.forEach(control => {
-                control.addEventListener('input', fullRender);
-                control.addEventListener('change', fullRender); // For select dropdowns
-            });
-            frameSelector.addEventListener('change', fullRender);
-
-            // --- Initial State ---
-            headerText.value = `      *VECTOR GRAPHICS & REPAIR*
-      ==========================
-      1337 Terminal Green
-      Silicon Prairie, KS 66210
-      (913) 555-0184`;
-      
-            bodyText.value = `--------------------------------------------------
-*CUSTOMER INVOICE*
---------------------------------------------------
-Invoice #: 85-0012                  Date: 10/26/1985
-
-BILLED TO:
-Dr. Evelyn Reed
-/FutureTech Labs/
-1 Innovation Plaza
-
---------------------------------------------------
-QTY | DESCRIPTION                         | TOTAL
---------------------------------------------------
-1   | Floppy Drive Realignment            |  $45.00
-2   | 256KB RAM Chip Upgrade (128KB ea.)  | $110.00
-1   | Dot-Matrix Ribbon Replacement       |  $15.50
-.5  | Diagnostics & Labor (30 min)        |  $25.00
-    |                                     |
---------------------------------------------------
-                           SUBTOTAL:      | $195.50
-                      SALES TAX (5.5%):    |  $10.75
-                           ========================
-                           *AMOUNT DUE:* | *$206.25*
---------------------------------------------------
-PAYMENT: Cash on delivery. 30-day warranty on all
-         parts and labor. /Thank you for your
-         business!/
-
-         -- Vector Graphics Staff`;
+            function getFontOptions(selectedFont) {
+                const fonts = { 'font-special-elite': 'Classic Typewriter', 'font-cutive-mono': 'Clean Mono', 'font-bogart': 'Classic Serif', 'font-vt323': 'Dot-Matrix' };
+                return Object.entries(fonts).map(([value, name]) => `<option value="${value}" ${value === selectedFont ? 'selected' : ''}>${name}</option>`).join('');
+            }
             
-            fullRender();
+            function selectElement(elData) {
+                if (activeElement === elData) return;
+                deselectAll();
+                activeElement = elData;
+                activeElement.el.classList.add('selected');
+                updateControls();
+            }
+
+            function deselectAll() {
+                if (activeElement) {
+                    activeElement.el.classList.remove('selected');
+                }
+                activeElement = null;
+                updateControls();
+            }
+
+            document.addEventListener('mousedown', (e) => {
+                const wrapper = e.target.closest('.output-text-block, .draggable-image-wrapper');
+                
+                if (!wrapper) {
+                    if (!e.target.closest('#text-controls')) deselectAll();
+                    return;
+                }
+                
+                const elData = elements.find(el => el.id == wrapper.dataset.id);
+                if (!elData) return;
+
+                selectElement(elData);
+
+                if (e.detail === 2 && activeElement.type === 'text') {
+                    const textDiv = activeElement.el.querySelector('.output-text');
+                    textDiv.contentEditable = 'true';
+                    textDiv.focus();
+                    const range = document.createRange();
+                    range.selectNodeContents(textDiv);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    
+                    const elementBeingEdited = activeElement;
+                    textDiv.addEventListener('blur', () => {
+                        textDiv.contentEditable = 'false';
+                        if (elementBeingEdited) {
+                            elementBeingEdited.text = textDiv.innerText;
+                            renderText(elementBeingEdited);
+                        }
+                    }, { once: true });
+                    return;
+                }
+                
+                const rect = wrapper.getBoundingClientRect();
+                action.startX = e.clientX;
+                action.startY = e.clientY;
+                action.elData = activeElement;
+
+                if (e.target.classList.contains('resize-handle')) {
+                    action.type = 'resize';
+                    action.startW = rect.width;
+                } else if (e.target.classList.contains('rotate-handle')) {
+                    action.type = 'rotate';
+                    action.centerX = wrapper.offsetLeft + rect.width / 2;
+                    action.centerY = wrapper.offsetTop + rect.height / 2;
+                } else {
+                    action.type = 'drag';
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!action.type || !action.elData) return;
+                e.preventDefault();
+                const dx = e.clientX - action.startX;
+                const dy = e.clientY - action.startY;
+                if (action.type === 'drag') {
+                    action.elData.x += dx;
+                    action.elData.y += dy;
+                    action.elData.el.style.left = `${action.elData.x}px`;
+                    action.elData.el.style.top = `${action.elData.y}px`;
+                    action.startX = e.clientX;
+                    action.startY = e.clientY;
+                } else if (action.type === 'resize') {
+                    action.elData.width = Math.max(30, action.startW + dx);
+                    action.elData.el.style.width = `${action.elData.width}px`;
+                } else if (action.type === 'rotate') {
+                    const angle = Math.atan2(e.clientY - (outputContainer.offsetTop + action.centerY), e.clientX - (outputContainer.offsetLeft + action.centerX)) * (180 / Math.PI) + 90;
+                    action.elData.rotation = angle;
+                    action.elData.el.style.transform = `rotate(${angle}deg)`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => { action.type = null; action.elData = null; });
+            
+            document.addEventListener('keydown', (e) => {
+                 if ((e.key === 'Delete' || e.key === 'Backspace') && activeElement) {
+                     const targetIsEditable = activeElement.type === 'text' && document.activeElement === activeElement.el.querySelector('.output-text');
+                     if(!targetIsEditable) {
+                        e.preventDefault();
+                        activeElement.el.remove();
+                        elements = elements.filter(el => el.id !== activeElement.id);
+                        deselectAll();
+                     }
+                }
+            });
+
+            frameSelector.addEventListener('change', () => {
+                const template = templates[frameSelector.value];
+                outputContainer.style.backgroundImage = template !== 'none' ? template : '';
+                if(frameSelector.value === 'lined') outputContainer.style.backgroundSize = '100% 1.6em';
+                else outputContainer.style.backgroundSize = '100% 100%';
+            });
+            
+            fontControl.addEventListener('change', (e) => { if(activeElement) { activeElement.font = e.target.value; renderText(activeElement); }});
+            sizeControl.addEventListener('input', (e) => { if(activeElement) { activeElement.size = e.target.value; renderText(activeElement); }});
+            corruptionControl.addEventListener('input', (e) => { if(activeElement) { activeElement.corruption = e.target.value; renderText(activeElement); }});
+            jitterControl.addEventListener('input', (e) => { if(activeElement) { activeElement.jitter = e.target.value; renderText(activeElement); }});
+            rotationControl.addEventListener('input', (e) => { if(activeElement) { activeElement.rotation = e.target.value; renderText(activeElement); }});
+            inkControl.addEventListener('input', (e) => { if(activeElement) { activeElement.ink = e.target.value; renderText(activeElement); }});
+            
+            addTextButton.addEventListener('click', createTextBlock);
+            addImageButton.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (re) => createImageElement(re.target.result);
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+            exportPdfButton.addEventListener('click', exportToPDF);
+            
+            // Initial Load
+            frameSelector.dispatchEvent(new Event('change'));
         });
     </script>
 </body>
