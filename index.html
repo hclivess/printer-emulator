@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Text Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Historical Fonts from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro&family=Bogart&family=Cousine&family=Cutive+Mono&family=IBM+Plex+Mono&family=Libre+Baskerville&family=Oranienbaum&family=Press+Start+2P&family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+    <!-- PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Base styling for the output text container */
+        .output-text { color: #2d3748; white-space: pre-wrap; }
+
+        /* --- Font Normalization --- */
+        /* Specific adjustments for each font to ensure layout consistency. */
+        .font-vt323 { font-family: 'VT323', monospace; font-size: 20px; letter-spacing: 2px; line-height: 24px; }
+        .font-special-elite { font-family: 'Special Elite', cursive; font-size: 16px; letter-spacing: 1.5px; line-height: 26px; }
+        .font-cutive-mono { font-family: 'Cutive Mono', monospace; font-size: 17px; letter-spacing: 1px; line-height: 25px; }
+        .font-bogart { font-family: 'Bogart', serif; font-size: 19px; letter-spacing: 0.5px; line-height: 26px; }
+        .font-press-start-2p { font-family: 'Press Start 2P', cursive; font-size: 12px; line-height: 24px; }
+        .font-ibm-plex-mono { font-family: 'IBM Plex Mono', monospace; font-size: 16px; line-height: 26px; }
+        .font-anonymous-pro { font-family: 'Anonymous Pro', monospace; font-size: 18px; line-height: 26px; }
+        .font-cousine { font-family: 'Cousine', monospace; font-size: 17px; line-height: 26px; }
+        .font-libre-baskerville { font-family: 'Libre Baskerville', serif; font-size: 17px; line-height: 28px; }
+        .font-oranienbaum { font-family: 'Oranienbaum', serif; font-size: 20px; line-height: 28px; }
+
+        /* Style for individual characters to add irregularity */
+        .styled-char { display: inline-block; margin: 0 -2px; padding: 0 2px; }
+        
+        /* Image container styling */
+        .image-container { position: absolute; }
+        .image-preview { height: auto; object-fit: contain; user-select: none; pointer-events: none; }
+
+        #logo-preview { width: 100px; }
+        #signature-preview { width: 150px; }
+        
+        /* Slider styling */
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4A5568; cursor: pointer; border-radius: 50%; }
+    </style>
+</head>
+<body class="bg-gray-200 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-gray-100 rounded-lg shadow-2xl p-6">
+        <h1 class="text-4xl text-center text-gray-700 mb-2" style="font-family: 'Special Elite', cursive;">Historical Text Generator</h1>
+        <p class="text-center text-gray-500 mb-6">Type your text, choose a font, add images, and export to PDF.</p>
+
+        <div class="bg-white p-4 rounded-md shadow-inner">
+            <textarea id="inputText" class="w-full h-48 p-3 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono" placeholder="Paste your pre-formatted text here..."></textarea>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="bg-white p-4 rounded-md shadow-inner mt-4 space-y-4">
+            <!-- Font Controls -->
+            <div>
+                <label for="fontSelector" class="block text-sm font-medium text-gray-700">Font Style</label>
+                <select id="fontSelector" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="font-special-elite" selected>Classic Typewriter (Prop)</option>
+                    <option value="font-bogart">Classic Serif (Prop)</option>
+                    <option value="font-libre-baskerville">Baskerville (Prop)</option>
+                    <option value="font-oranienbaum">Oranienbaum (Prop)</option>
+                    <option value="font-cutive-mono">Clean Typewriter (Mono)</option>
+                    <option value="font-ibm-plex-mono">IBM Terminal (Mono)</option>
+                    <option value="font-anonymous-pro">Programmer (Mono)</option>
+                    <option value="font-cousine">Courier (Mono)</option>
+                    <option value="font-vt323">Dot-Matrix (Mono)</option>
+                    <option value="font-press-start-2p">8-Bit Pixel (Prop)</option>
+                </select>
+            </div>
+            <!-- Logo Controls -->
+            <div id="logo-controls" class="hidden space-y-2">
+                <hr><h3 class="font-bold text-gray-600">Logo Controls</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div><label for="logoSize" class="block text-sm font-medium text-gray-700">Size</label><input id="logoSize" type="range" min="30" max="400" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                     <div><label for="logoX" class="block text-sm font-medium text-gray-700">X Position</label><input id="logoX" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                     <div><label for="logoY" class="block text-sm font-medium text-gray-700">Y Position</label><input id="logoY" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                </div>
+            </div>
+            <!-- Signature Controls -->
+             <div id="signature-controls" class="hidden space-y-2">
+                <hr><h3 class="font-bold text-gray-600">Signature Controls</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div><label for="signatureSize" class="block text-sm font-medium text-gray-700">Size</label><input id="signatureSize" type="range" min="50" max="500" value="150" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                     <div><label for="signatureX" class="block text-sm font-medium text-gray-700">X Position</label><input id="signatureX" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                     <div><label for="signatureY" class="block text-sm font-medium text-gray-700">Y Position</label><input id="signatureY" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center items-center my-4 gap-4">
+            <button id="instantButton" class="px-6 py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 active:bg-green-800 transition-transform transform active:scale-95 shadow-lg">Generate Text</button>
+            <button id="logoButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Logo</button>
+            <input type="file" id="logoInput" class="hidden" accept="image/*">
+            <button id="signatureButton" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95 shadow-lg">Add Signature</button>
+            <input type="file" id="signatureInput" class="hidden" accept="image/*">
+            <button id="exportPdfButton" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-md hover:bg-purple-700 active:bg-purple-800 transition-transform transform active:scale-95 shadow-lg flex items-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Export PDF
+            </button>
+        </div>
+
+        <div id="outputContainer" class="relative mt-6 bg-white p-8 rounded-lg shadow-inner overflow-hidden">
+            <div id="logo-container" class="image-container"><img id="logo-preview" src="" alt="Logo Preview" class="image-preview hidden"/></div>
+            <div id="signature-container" class="image-container"><img id="signature-preview" src="" alt="Signature Preview" class="image-preview hidden"/></div>
+            <div class="relative w-full"><div id="output" class="min-h-[200px] w-full output-text"></div></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const inputText = document.getElementById('inputText');
+            const instantButton = document.getElementById('instantButton');
+            const exportPdfButton = document.getElementById('exportPdfButton');
+            const fontSelector = document.getElementById('fontSelector');
+            const outputDiv = document.getElementById('output');
+            const outputContainer = document.getElementById('outputContainer');
+
+            // Logo Elements
+            const logoButton = document.getElementById('logoButton');
+            const logoInput = document.getElementById('logoInput');
+            const logoPreview = document.getElementById('logo-preview');
+            const logoContainer = document.getElementById('logo-container');
+            const logoControls = document.getElementById('logo-controls');
+            const logoSizeSlider = document.getElementById('logoSize');
+            const logoXSlider = document.getElementById('logoX');
+            const logoYSlider = document.getElementById('logoY');
+
+            // Signature Elements
+            const signatureButton = document.getElementById('signatureButton');
+            const signatureInput = document.getElementById('signatureInput');
+            const signaturePreview = document.getElementById('signature-preview');
+            const signatureContainer = document.getElementById('signature-container');
+            const signatureControls = document.getElementById('signature-controls');
+            const signatureSizeSlider = document.getElementById('signatureSize');
+            const signatureXSlider = document.getElementById('signatureX');
+            const signatureYSlider = document.getElementById('signatureY');
+
+            // --- PDF Export ---
+            const { jsPDF } = window.jspdf;
+            
+            const exportToPDF = () => {
+                html2canvas(outputContainer, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+                    // Use canvas dimensions for a frameless PDF
+                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                    pdf.save("historical-output.pdf");
+                }).catch(err => console.error("Error exporting to PDF:", err));
+            };
+            
+            // --- Generic Image Handling ---
+            const setupImageInput = (button, input, preview, controls) => {
+                button.addEventListener('click', () => input.click());
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            preview.src = e.target.result;
+                            preview.classList.remove('hidden');
+                            controls.classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            };
+
+            setupImageInput(logoButton, logoInput, logoPreview, logoControls);
+            setupImageInput(signatureButton, signatureInput, signaturePreview, signatureControls);
+
+            // --- Image Control Handlers ---
+            const setupImageControls = (container, preview, sizeSlider, xSlider, ySlider) => {
+                const updatePosition = () => {
+                    container.style.left = `${xSlider.value}%`;
+                    container.style.top = `${ySlider.value}%`;
+                    container.style.transform = 'translate(-50%, -50%)';
+                };
+                sizeSlider.addEventListener('input', (e) => { preview.style.width = `${e.target.value}px`; });
+                xSlider.addEventListener('input', updatePosition);
+                ySlider.addEventListener('input', updatePosition);
+                updatePosition(); // Set initial position
+            };
+
+            setupImageControls(logoContainer, logoPreview, logoSizeSlider, logoXSlider, logoYSlider);
+            setupImageControls(signatureContainer, signaturePreview, signatureSizeSlider, signatureXSlider, signatureYSlider);
+
+            // --- Text Generation ---
+            function createStyledChar(char) {
+                const span = document.createElement('span');
+                span.className = 'styled-char';
+                span.innerHTML = (char === ' ') ? '&nbsp;' : char;
+                const xOffset = (Math.random() - 0.5) * 0.7;
+                const yOffset = (Math.random() - 0.5) * 1.2;
+                const rotation = (Math.random() - 0.5) * 1.5;
+                const opacity = 0.85 + Math.random() * 0.15;
+                span.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${rotation}deg)`;
+                span.style.opacity = opacity;
+                if (Math.random() > 0.7) { span.style.textShadow = '0.5px 0.5px 0.5px rgba(45, 55, 72, 0.1)';}
+                return span;
+            }
+
+            const instantPrint = () => {
+                let textToPrint = inputText.value;
+                textToPrint = textToPrint.replace(/\u00A0/g, ' ');
+
+                outputDiv.innerHTML = '';
+                outputDiv.className = `min-h-[200px] w-full output-text ${fontSelector.value}`;
+                const lines = textToPrint.split('\n');
+                lines.forEach(line => {
+                    const lineDiv = document.createElement('div');
+                    for (const char of line) { lineDiv.appendChild(createStyledChar(char)); }
+                    if (line.trim() === '') { lineDiv.innerHTML = '&nbsp;'; }
+                    outputDiv.appendChild(lineDiv);
+                });
+            }
+            
+            // --- Event Listeners ---
+            instantButton.addEventListener('click', instantPrint);
+            exportPdfButton.addEventListener('click', exportToPDF);
+            fontSelector.addEventListener('change', instantPrint);
+            inputText.addEventListener('input', instantPrint);
+
+            // --- Initial State ---
+            inputText.value = `      VECTOR GRAPHICS & REPAIR
+      ==========================
+      1337 Terminal Green
+      Silicon Prairie, KS 66210
+      (913) 555-0184
+
+--------------------------------------------------
+CUSTOMER INVOICE
+--------------------------------------------------
+Invoice #: 85-0012                  Date: 10/26/1985
+
+BILLED TO:
+Dr. Evelyn Reed
+FutureTech Labs
+1 Innovation Plaza
+
+--------------------------------------------------
+QTY | DESCRIPTION                         | TOTAL
+--------------------------------------------------
+1   | Floppy Drive Realignment            |  $45.00
+2   | 256KB RAM Chip Upgrade (128KB ea.)  | $110.00
+1   | Dot-Matrix Ribbon Replacement       |  $15.50
+.5  | Diagnostics & Labor (30 min)        |  $25.00
+    |                                     |
+--------------------------------------------------
+                           SUBTOTAL:      | $195.50
+                      SALES TAX (5.5%):    |  $10.75
+                           ========================
+                           AMOUNT DUE:      | $206.25
+--------------------------------------------------
+PAYMENT: Cash on delivery. 30-day warranty on all
+         parts and labor. Thank you for your
+         business!
+
+         -- Vector Graphics Staff`;
+            
+            instantPrint();
+        });
+    </script>
+</body>
+</html>
